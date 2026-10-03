@@ -56,6 +56,7 @@ class Email(BaseModel):
     corpo: str = ""
     recebido_em: datetime
     anexos: list[Anexo] = []
+    cabecalhos: dict[str, str] = {}  # ex.: List-Unsubscribe, presente em e-mail de marketing
 
 
 class EmailLimpo(BaseModel):
