@@ -124,6 +124,25 @@ Orquestração em `pipeline.py`. Stack: Python 3.12+, uv, Pydantic, httpx, psyco
 - Medido com o modelo carregado, na tomada: ~26 s por e-mail no `qwen3:8b` em CPU (i7-1255U, sem GPU); 5 s lendo o prompt (~720 tokens) e 22 s gerando (~100 tokens, 4 tok/s). Na bateria e com memória cheia, piora bastante
 - LLM não extraiu "Jardim das Acácias" no ex-001 (`condominio_mencionado: null`): caso para o dataset de evals
 
+### Análise da amostra de setembro (03/10/2026)
+149 e-mails em `emails_amostra_setembro.json`, rotulados manualmente (provisório, a validar): 27 urgentes, 21 importantes, 101 normais.
+- Filtro antes do LLM: propaganda não passa pelo LLM (parece propaganda E tem `List-Unsubscribe`); o resto é ordenado por palavra-chave (urgente → importante → resto, e por chegada dentro de cada grupo)
+- Duas listas de palavras, por custo de erro diferente: a da **fila** é larga (falso positivo só adianta a classificação) e inclui automaticamente a da **rede de segurança**, que é estreita (falso positivo vira alarme na fila da atendente)
+- Depois de ajustar as listas com a amostra: a fila pega 26/27 urgentes (antes 16/27); as 4 expressões novas da rede não geraram nenhum falso positivo
+- Limite da palavra-chave, com prova (resposta ao mentor): E032 "**não** tem cheiro de gás" e E113 "quero agradecer... quando **fiquei presa** no elevador" acionam a rede como urgente; palavra-chave não entende negação nem tempo verbal
+
+**Pendentes para corrigir:**
+- Bug na limpeza: e-mail encaminhado (E048, "buraco aberto, alguém pode cair") fica com corpo vazio, porque a limpeza corta na linha `De:` do encaminhamento, que é onde está o conteúdo
+- Filtro de propaganda pegou 0/10 na amostra: a amostra não tem cabeçalhos; prospecção de fornecedor (E053, E093, E115, E145) costuma não ter unsubscribe; golpes (E021, E037) não são propaganda e talvez precisem de tratamento próprio
+- Formato da amostra difere do `Email` (`data`, `remetente_email`, `remetente_nome`): precisa de adaptação na entrada
+
+**Perguntas para o Sérgio (rótulos em dúvida):**
+- Falta de água em **um só** apartamento (E070): a regra fala em "prédio ou vários apartamentos". Fica importante?
+- Lâmpada queimada no **hall** (E094): o hall está em "falta de luz nas áreas comuns" (urgente), mas lâmpada queimada está em importante. Qual vale?
+- Vazamento "pequeno", pingando devagar (E117): vazamento ativo é urgente. Vale também para os pequenos?
+- Portão travado **fechado**, ninguém sai pela rua (E128): a regra fala só em portão que não fecha
+- Riscos fora da regra: buraco aberto no estacionamento (E048/E081) e fio solto no playground (E073). Que nível?
+
 ### Pontos em aberto
 - Fila de classificação: mesmo a ~26 s por e-mail, uma urgência espera os e-mails à frente dela serem classificados (segunda-feira com 200 e-mails ≈ 1h30). Em discussão: modelo menor, GPU/API, ordem de processamento, filtro antes do LLM
 - Lixo com palavra-chave (ex.: propaganda de "conserto de vazamento") vai subir para importante + revisão. Aceito por ora; medir nos evals

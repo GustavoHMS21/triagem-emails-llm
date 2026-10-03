@@ -77,9 +77,12 @@ def _normalizar(texto: str) -> str:
 PALAVRAS_CRITICAS: dict[str, Nivel] = {
     r"cheiro de g[aá]s|vazamento de g[aá]s": Nivel.URGENTE,
     r"pres[oa]s? no elevador|gente presa|pessoa presa": Nivel.URGENTE,
+    r"elevador.{0,60}dentro|dentro do elevador": Nivel.URGENTE,  # "parou com a dona Cida dentro" (E039)
     r"inc[eê]ndio|fuma[cç]a|fa[ií]sca|curto[- ]circuito": Nivel.URGENTE,
+    r"cheiro de queimado": Nivel.URGENTE,  # E132
+    r"fio desencapado": Nivel.URGENTE,
     r"cano estourad|estourou o cano|alagad|alagamento": Nivel.URGENTE,
-    r"vazamento|vazando|infiltra": Nivel.IMPORTANTE,
+    r"vazamento|vazando|vasament|infiltra": Nivel.IMPORTANTE,  # "vasamento", erro comum (E064)
     r"sem [aá]gua|falta de [aá]gua": Nivel.IMPORTANTE,
     r"sem luz|falta de luz|apag[aã]o": Nivel.IMPORTANTE,
     r"port[aã]o.{0,30}(n[aã]o fecha|aberto|quebrad)": Nivel.IMPORTANTE,
