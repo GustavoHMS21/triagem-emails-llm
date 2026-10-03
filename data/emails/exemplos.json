@@ -1,0 +1,66 @@
+[
+  {
+    "id": "ex-001",
+    "remetente": "carla.moradora@gmail.com",
+    "assunto": "URGENTE!!! segunda via",
+    "corpo": "Bom dia, preciso da segunda via do boleto de outubro do apto 42, Jardim das Acácias.\n\nObrigada\nCarla\n\nEnviado do meu iPhone",
+    "recebido_em": "2026-09-29T08:12:00-03:00",
+    "anexos": []
+  },
+  {
+    "id": "ex-002",
+    "remetente": "joao.pereira@yahoo.com.br",
+    "assunto": "água descendo pela parede",
+    "corpo": "Gente, tá descendo água pela parede do banheiro do 31, parece que vem do apto de cima. Já molhou o chão todo. Solar do Parque.",
+    "recebido_em": "2026-09-29T08:40:00-03:00",
+    "anexos": [{"nome": "IMG_2231.jpg", "tipo": "image/jpeg"}]
+  },
+  {
+    "id": "ex-003",
+    "remetente": "sindico.solar@gmail.com",
+    "assunto": "Re: reserva salão",
+    "corpo": "Pode confirmar a reserva do salão para o dia 12?\n\nEm seg., 28 de set. de 2026 às 17:02, Alvorada Atendimento <atendimento@alvorada.com.br> escreveu:\n> Bom dia, segue a disponibilidade do salão...\n> Dias livres: 5, 12 e 19.",
+    "recebido_em": "2026-09-29T09:05:00-03:00",
+    "anexos": []
+  },
+  {
+    "id": "ex-004",
+    "remetente": "lucia.m@gmail.com",
+    "assunto": "elevador",
+    "corpo": "O elevador parou de novo desde ontem a noite. Moro no 9º andar, Edifício Monte Azul.\n\nAtt,\nLúcia Martins\nApto 92",
+    "recebido_em": "2026-09-29T09:30:00-03:00",
+    "anexos": []
+  },
+  {
+    "id": "ex-005",
+    "remetente": "roberto.f@gmail.com",
+    "assunto": "",
+    "corpo": "segue anexo",
+    "recebido_em": "2026-09-29T10:01:00-03:00",
+    "anexos": [{"nome": "comprovante.pdf", "tipo": "application/pdf"}]
+  },
+  {
+    "id": "ex-006",
+    "remetente": "ofertas@limpezatotal.com.br",
+    "assunto": "Desconto de 30% em limpeza de caixa d'água",
+    "corpo": "Aproveite! Limpeza de caixa d'água e desentupimento com 30% de desconto para condomínios de Santo André. Ligue já.",
+    "recebido_em": "2026-09-29T10:15:00-03:00",
+    "anexos": []
+  },
+  {
+    "id": "ex-007",
+    "remetente": "ana.beatriz@gmail.com",
+    "assunto": "mancha no teto + boleto",
+    "corpo": "Oi, apareceu uma mancha de umidade no teto da sala, não está pingando. Aproveitando, o boleto deste mês veio com valor diferente, podem verificar? Torres do Campestre, bloco B 104.",
+    "recebido_em": "2026-09-29T11:20:00-03:00",
+    "anexos": []
+  },
+  {
+    "id": "ex-008",
+    "remetente": "fernando.v@gmail.com",
+    "assunto": "cheiro estranho",
+    "corpo": "Desde cedo tem um cheiro de gás forte no hall do térreo do Vila Bastos. Alguém pode olhar?",
+    "recebido_em": "2026-09-29T11:45:00-03:00",
+    "anexos": []
+  }
+]

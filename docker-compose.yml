@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: triagem
+      POSTGRES_PASSWORD: triagem
+      POSTGRES_DB: triagem
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Scripts em db/ rodam na primeira subida (banco vazio), em ordem alfabética
+      - ./db:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  pgdata:

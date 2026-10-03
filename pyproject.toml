@@ -1,0 +1,27 @@
+[project]
+name = "triagem"
+version = "0.1.0"
+description = "Triagem e classificação de e-mails da Alvorada Gestão Condominial"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "httpx>=0.27",
+    "psycopg[binary]>=3.2",
+    "streamlit>=1.40",
+    "pandas>=2.2",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/triagem"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
