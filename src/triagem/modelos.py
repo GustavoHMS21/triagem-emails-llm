@@ -97,7 +97,8 @@ class Classificacao(BaseModel):
 
 class Triagem(BaseModel):
     email: EmailLimpo
-    classificacao: Classificacao | None  # None quando o LLM falhou
+    classificacao: Classificacao | None  # None quando o LLM falhou ou nem foi chamado
+    categoria: Categoria | None  # vem do LLM, ou do filtro quando é propaganda
     condominio_id: str | None
     remetente_sindico: bool
     nivel_final: Nivel

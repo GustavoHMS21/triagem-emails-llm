@@ -13,6 +13,7 @@ from pathlib import Path
 from triagem.classificador import PROMPT_VERSAO, Classificador
 from triagem.config import config
 from triagem.entrada import FonteEmails, FonteJson
+from triagem.filtro import chave_da_fila, motivo_propaganda, triagem_de_propaganda
 from triagem.limpeza import limpar
 from triagem.llm import ClienteOllama
 from triagem.modelos import Triagem
@@ -28,26 +29,43 @@ def processar(
     cadastro: CadastroCondominios,
     repositorio: Repositorio | None,
 ) -> list[Triagem]:
-    resultados = []
+    # Fase 1: ler todos, pular os já triados e limpar
+    novos = []
     for email in fonte.ler():
         if repositorio and repositorio.ja_triado(email.id):
             log.info("%s já triado, pulando", email.id)
             continue
+        novos.append(limpar(email))
 
-        limpo = limpar(email)
+    # Fase 2: propaganda vai direto para o banco, sem gastar LLM
+    resultados = []
+    para_classificar = []
+    for limpo in novos:
+        motivo = motivo_propaganda(limpo)
+        if motivo:
+            resultados.append(_registrar(triagem_de_propaganda(limpo, motivo), repositorio))
+        else:
+            para_classificar.append(limpo)
+
+    # Fase 3: quem tem palavra-chave crítica passa primeiro pelo LLM
+    for limpo in sorted(para_classificar, key=chave_da_fila):
         classificacao = classificador.classificar(limpo)
         triagem = aplicar_regras(
             limpo, classificacao, cadastro, classificador.llm.nome_modelo, PROMPT_VERSAO
         )
-        if repositorio:
-            repositorio.salvar(triagem)
-
-        log.info(
-            "%-12s %-10s revisão=%-5s %s",
-            email.id, triagem.nivel_final.name, triagem.requer_revisao, limpo.assunto[:60],
-        )
-        resultados.append(triagem)
+        resultados.append(_registrar(triagem, repositorio))
     return resultados
+
+
+def _registrar(triagem: Triagem, repositorio: Repositorio | None) -> Triagem:
+    if repositorio:
+        repositorio.salvar(triagem)
+    log.info(
+        "%-12s %-10s revisão=%-5s %s",
+        triagem.email.original.id, triagem.nivel_final.name, triagem.requer_revisao,
+        triagem.email.assunto[:60],
+    )
+    return triagem
 
 
 def main() -> None:

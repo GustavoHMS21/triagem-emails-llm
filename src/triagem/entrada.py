@@ -16,6 +16,18 @@ class FonteEmails(Protocol):
     def ler(self) -> Iterator[Email]: ...
 
 
+# Nomes alternativos de campo -> nome no Email (formato da amostra de setembro)
+_CAMPOS_ALTERNATIVOS = {"data": "recebido_em", "remetente_email": "remetente"}
+
+
+def _normalizar(item: dict) -> dict:
+    """Traduz formatos diferentes para o formato do Email. O resto do pipeline
+    só conhece o Email; diferença de formato se resolve aqui na entrada."""
+    item = {_CAMPOS_ALTERNATIVOS.get(k, k): v for k, v in item.items()}
+    item["anexos"] = [{"nome": a} if isinstance(a, str) else a for a in item.get("anexos", [])]
+    return item
+
+
 class FonteJson:
     """Lê um arquivo .json (lista de e-mails) ou uma pasta com vários .json."""
 
@@ -27,4 +39,4 @@ class FonteJson:
         for arquivo in arquivos:
             dados = json.loads(arquivo.read_text(encoding="utf-8"))
             for item in dados if isinstance(dados, list) else [dados]:
-                yield Email.model_validate(item)
+                yield Email.model_validate(_normalizar(item))

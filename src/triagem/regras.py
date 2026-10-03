@@ -164,6 +164,7 @@ def aplicar_regras(
     return Triagem(
         email=email,
         classificacao=classificacao,
+        categoria=classificacao.categoria if classificacao else None,
         condominio_id=condominio.id if condominio else None,
         remetente_sindico=sindico_de is not None,
         nivel_final=nivel,

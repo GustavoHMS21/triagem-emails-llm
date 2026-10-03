@@ -125,16 +125,20 @@ Orquestração em `pipeline.py`. Stack: Python 3.12+, uv, Pydantic, httpx, psyco
 - LLM não extraiu "Jardim das Acácias" no ex-001 (`condominio_mencionado: null`): caso para o dataset de evals
 
 ### Análise da amostra de setembro (03/10/2026)
-149 e-mails em `emails_amostra_setembro.json`, rotulados manualmente (provisório, a validar): 27 urgentes, 21 importantes, 101 normais.
-- Filtro antes do LLM: propaganda não passa pelo LLM (parece propaganda E tem `List-Unsubscribe`); o resto é ordenado por palavra-chave (urgente → importante → resto, e por chegada dentro de cada grupo)
+149 e-mails em `data/amostras/emails_setembro.json`, rotulados manualmente (provisório, a validar): 27 urgentes, 21 importantes, 101 normais.
+- Filtro antes do LLM: propaganda não passa pelo LLM (parece propaganda E tem descadastro, no cabeçalho `List-Unsubscribe` ou escrito no corpo); vai para o banco como `lixo`, sem ser apagada. O resto é ordenado por palavra-chave (urgente → importante → resto, e por chegada dentro de cada grupo)
 - Duas listas de palavras, por custo de erro diferente: a da **fila** é larga (falso positivo só adianta a classificação) e inclui automaticamente a da **rede de segurança**, que é estreita (falso positivo vira alarme na fila da atendente)
-- Depois de ajustar as listas com a amostra: a fila pega 26/27 urgentes (antes 16/27); as 4 expressões novas da rede não geraram nenhum falso positivo
+- Depois de ajustar as listas com a amostra e corrigir a limpeza: a fila pega 27/27 urgentes (antes 16/27); as 4 expressões novas da rede não geraram nenhum falso positivo
+- Teste com o Qwen real (4 e-mails): propaganda filtrada sem LLM; urgentes classificados antes do boleto que chegou primeiro
 - Limite da palavra-chave, com prova (resposta ao mentor): E032 "**não** tem cheiro de gás" e E113 "quero agradecer... quando **fiquei presa** no elevador" acionam a rede como urgente; palavra-chave não entende negação nem tempo verbal
 
-**Pendentes para corrigir:**
-- Bug na limpeza: e-mail encaminhado (E048, "buraco aberto, alguém pode cair") fica com corpo vazio, porque a limpeza corta na linha `De:` do encaminhamento, que é onde está o conteúdo
-- Filtro de propaganda pegou 0/10 na amostra: a amostra não tem cabeçalhos; prospecção de fornecedor (E053, E093, E115, E145) costuma não ter unsubscribe; golpes (E021, E037) não são propaganda e talvez precisem de tratamento próprio
-- Formato da amostra difere do `Email` (`data`, `remetente_email`, `remetente_nome`): precisa de adaptação na entrada
+**Corrigido:**
+- Bug na limpeza: e-mail encaminhado (E048, "buraco aberto, alguém pode cair") ficava com corpo vazio. Agora o encaminhamento perde só a marca e o cabeçalho; resposta continua cortando o histórico
+- Formato da amostra (`data`, `remetente_email`, anexos como texto) traduzido na entrada (`entrada.py`); o resto do pipeline só conhece o `Email`
+
+**Limitações conhecidas:**
+- Filtro de propaganda pega 1/10 na amostra (E009), com zero falso positivo. A amostra não tem cabeçalhos; no Gmail real o `List-Unsubscribe` deve elevar isso. Prospecção de fornecedor sem descadastro (E053, E093, E115, E145) vai para o LLM, que a classifica como lixo
+- Golpes (E021 "conta será bloqueada", E037 "envie seu CPF") não são propaganda: tratar no bloco de segurança
 
 **Perguntas para o Sérgio (rótulos em dúvida):**
 - Falta de água em **um só** apartamento (E070): a regra fala em "prédio ou vários apartamentos". Fica importante?

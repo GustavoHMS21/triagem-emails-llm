@@ -15,6 +15,33 @@ def test_corta_historico_do_outlook():
     assert limpar_corpo(corpo) == "Segue o comprovante."
 
 
+def test_encaminhamento_mantem_o_conteudo():
+    # E048: o conteúdo urgente está DENTRO do encaminhamento
+    corpo = (
+        "---------- Forwarded message ---------\n"
+        "De: Roberto Nogueira <roberto@nogueiratransportes.com.br>\n"
+        "Assunto: aviso\n\n"
+        "A tampa do poço de esgoto quebrou, tem um buraco aberto."
+    )
+    assert limpar_corpo(corpo) == "A tampa do poço de esgoto quebrou, tem um buraco aberto."
+
+
+def test_encaminhamento_com_texto_em_cima_mantem_os_dois():
+    corpo = (
+        "Sérgio, veja o aviso abaixo.\n\n"
+        "---------- Mensagem encaminhada ---------\n"
+        "De: Zelador <zelador@gmail.com>\n"
+        "Data: 1 de out. de 2026\n\n"
+        "Bomba do bloco A parou."
+    )
+    assert limpar_corpo(corpo) == "Sérgio, veja o aviso abaixo.\n\nBomba do bloco A parou."
+
+
+def test_resposta_continua_cortando_o_historico():
+    corpo = "Ok, obrigado!\n\n-----Mensagem original-----\nDe: Alvorada\nSegue boleto."
+    assert limpar_corpo(corpo) == "Ok, obrigado!"
+
+
 def test_remove_rodape_de_celular():
     assert limpar_corpo("Sem água no bloco B.\n\nEnviado do meu iPhone") == "Sem água no bloco B."
 

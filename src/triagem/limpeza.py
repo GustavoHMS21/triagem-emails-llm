@@ -9,12 +9,20 @@ import re
 
 from triagem.modelos import Email, EmailLimpo
 
-# Linha que marca o início do histórico citado; tudo dali para baixo sai
+# Encaminhamento: o conteúdo ESTÁ abaixo da marca, então não se corta.
+# Só saem a marca e o bloco de cabeçalho logo depois dela.
+_MARCA_ENCAMINHAMENTO = re.compile(
+    r"^\s*-{2,}\s*(Mensagem encaminhada|Forwarded message)\s*-{2,}", re.IGNORECASE
+)
+_CABECALHO_ENCAMINHADO = re.compile(
+    r"^\s*(De|From|Para|To|Cc|Data|Date|Assunto|Subject|Enviad[ao](\s+em)?|Sent)\s*:", re.IGNORECASE
+)
+
+# Linha que marca o início do histórico citado (resposta); tudo dali para baixo sai
 _INICIO_HISTORICO = [
     re.compile(r"^\s*Em .{5,120} escreveu:\s*$", re.IGNORECASE),
     re.compile(r"^\s*On .{5,120} wrote:\s*$", re.IGNORECASE),
-    re.compile(r"^\s*-{2,}\s*Mensagem (original|encaminhada)\s*-{2,}", re.IGNORECASE),
-    re.compile(r"^\s*-{2,}\s*(Original|Forwarded) message\s*-{2,}", re.IGNORECASE),
+    re.compile(r"^\s*-{2,}\s*(Mensagem original|Original message)\s*-{2,}", re.IGNORECASE),
     re.compile(r"^\s*De:\s.+", re.IGNORECASE),  # cabeçalho do Outlook ao responder
     re.compile(r"^\s*From:\s.+", re.IGNORECASE),
     re.compile(r"^\s*_{10,}\s*$"),  # linha de sublinhados do Outlook
@@ -40,8 +48,26 @@ _LIXO_ASSUNTO = re.compile(
 )
 
 
+def _abrir_encaminhamentos(linhas: list[str]) -> list[str]:
+    """Tira a marca de encaminhamento e o cabeçalho logo abaixo, mantendo a mensagem."""
+    resultado = []
+    no_cabecalho = False
+    for linha in linhas:
+        if _MARCA_ENCAMINHAMENTO.match(linha):
+            no_cabecalho = True
+            continue
+        if no_cabecalho and _CABECALHO_ENCAMINHADO.match(linha):
+            continue
+        no_cabecalho = False
+        resultado.append(linha)
+    return resultado
+
+
 def limpar_corpo(corpo: str) -> str:
     linhas = corpo.replace("\r\n", "\n").split("\n")
+
+    # 0. encaminhamento: tira só a marca e o cabeçalho, o conteúdo fica
+    linhas = _abrir_encaminhamentos(linhas)
 
     # 1. corta no início do histórico citado
     for i, linha in enumerate(linhas):

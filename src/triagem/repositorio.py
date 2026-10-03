@@ -72,7 +72,7 @@ class Repositorio:
             "corpo": t.email.corpo,
             "anexos": Jsonb([a.model_dump() for a in email.anexos]),
             "recebido_em": email.recebido_em,
-            "categoria": c.categoria if c else None,
+            "categoria": t.categoria,
             "outras_categorias": c.outras_categorias if c else [],
             "urgencia_llm": c.urgencia if c else None,
             "resumo": c.resumo if c else None,
