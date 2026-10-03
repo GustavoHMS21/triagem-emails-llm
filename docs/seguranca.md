@@ -10,6 +10,28 @@ Os itens seguem a ordem de prioridade: o que expõe mais dado com menos esforço
 | 3 | LGPD (dados pessoais, retenção, acesso) | Pendente |
 | 4 | Segredos e configuração | Pendente |
 
+Detalhes de integração, validação e retry: [decisoes-tecnicas.md](decisoes-tecnicas.md).
+
+---
+
+## 0. Controles que já existem no código
+
+Foram decididos na estrutura inicial, antes da revisão de segurança item a item.
+
+| Risco | Controle | Onde |
+|---|---|---|
+| **SQL injection** | Toda consulta é parametrizada (`%s` com parâmetros separados); nenhum SQL é montado concatenando texto do e-mail | `repositorio.py` |
+| **Prompt injection** (e-mail com instruções para o LLM) | (1) o prompt diz que o e-mail é dado e não instrução; (2) o corpo vai delimitado entre `<email>` e `</email>`; (3) a saída é restrita a um schema: o modelo só consegue devolver categoria e urgência de uma lista fechada; (4) o LLM não tem ferramentas nem executa ações, só classifica; (5) regras críticas (síndico, elevador, palavras-chave) ficam no código e o LLM não as altera | `prompts/classificacao_v1.md`, `classificador.py`, `regras.py` |
+| **Saída do LLM usada sem validação** | Pydantic valida toda resposta; inválida vira revisão humana | `classificador.py` |
+| **Dado inválido no banco** | `CHECK`, `NOT NULL` e `UNIQUE` no schema | `db/001_init.sql` |
+| **Travamento por serviço externo** | Timeout em toda chamada ao LLM (`LLM_TIMEOUT_S`) | `llm.py` |
+| **Segredo no repositório** | `.env` no `.gitignore`; só `.env.example` (sem valores reais) é versionado | `.gitignore` |
+| **"URGENTE" falso no assunto** | Removido pela limpeza antes de chegar ao LLM; regra do cliente aplicada em código | `limpeza.py` |
+
+**Limites conhecidos, tratados no item 2:**
+- Nenhuma defesa contra prompt injection é completa. Um e-mail pode convencer o modelo a classificar errado (ex.: rebaixar um urgente). O controle é de **impacto**: o pior caso é uma classificação errada, que a rede de palavras-chave e a revisão humana podem pegar. O modelo não consegue apagar, enviar ou acessar nada. A amostra de setembro tem um caso de teste para isso (E072).
+- O painel mostra `resumo` e `motivos` com `st.markdown`. Esse texto vem do LLM, que leu um e-mail de terceiros. Um e-mail pode induzir o modelo a escrever markdown com link ou imagem externa (ex.: rastrear quando a atendente abriu o chamado). Correção: exibir como texto puro.
+
 ---
 
 ## 1. Painel exposto na rede

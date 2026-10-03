@@ -42,6 +42,11 @@ uv run streamlit run src/triagem/painel.py             # fila
 | `src/triagem/painel.py` | Painel Streamlit |
 | `data/condominios.csv` | Condomínios, nº de elevadores e e-mail do síndico |
 
+## Documentação técnica
+
+- [docs/decisoes-tecnicas.md](docs/decisoes-tecnicas.md): integrações (Ollama, PostgreSQL, Gmail), validação, retry, testes
+- [docs/seguranca.md](docs/seguranca.md): riscos, controles e como foram verificados
+
 ## Roadmap (fora da v1)
 
 - Leitura direta do Gmail (nova `FonteEmails`), com pool de conexões (`psycopg_pool`) para o processo contínuo
