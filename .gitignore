@@ -5,5 +5,8 @@ __pycache__/
 .pytest_cache/
 .streamlit/secrets.toml
 
+# Saída de execução da avaliação
+resultados/
+
 # Material de estudo pessoal (não versionado)
 docs/
