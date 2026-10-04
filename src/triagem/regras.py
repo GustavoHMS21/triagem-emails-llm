@@ -115,7 +115,7 @@ PALAVRAS_CRITICAS: dict[str, tuple[Nivel, str]] = {
     r"vazamento|vazando|vasament|infiltra": (Nivel.IMPORTANTE, "vazamento ou infiltração"),  # "vasamento" (E064)
     r"sem [aá]gua|falta de [aá]gua": (Nivel.IMPORTANTE, "falta de água"),
     r"sem luz|falta de luz|apag[aã]o": (Nivel.IMPORTANTE, "falta de luz"),
-    r"port[aã]o.{0,30}(n[aã]o fecha|aberto|quebrad)": (Nivel.IMPORTANTE, "portão que não fecha"),
+    r"port[aã]o.{0,30}(n[aã]o fecha|aberto|quebrad)": (Nivel.URGENTE, "portão que não fecha"),
 }
 _PALAVRAS_COMPILADAS = [(re.compile(p, re.IGNORECASE), n, r) for p, (n, r) in PALAVRAS_CRITICAS.items()]
 

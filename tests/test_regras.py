@@ -176,3 +176,10 @@ def test_motivos_nao_carregam_dado_pessoal_do_email():
 def test_palavra_chave_aparece_pelo_rotulo():
     t = triar(email("cheiro de gás no hall"), classif(urgencia="normal"))
     assert any("Palavra-chave crítica (cheiro de gás)" in m for m in t.motivos)
+
+
+def test_portao_que_nao_fecha_e_urgente_mesmo_se_o_llm_subestimar():
+    # Regra do cliente: portão da garagem ou da entrada que não fecha é urgente
+    t = triar(email("O portão da entrada de pedestres não fecha sozinho"), classif(urgencia="normal"))
+    assert t.nivel_final == Nivel.URGENTE
+    assert t.requer_revisao
