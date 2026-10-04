@@ -7,6 +7,7 @@ Uso:
 import streamlit as st
 
 from triagem.config import config
+from triagem.formatacao import escapar_markdown
 from triagem.repositorio import Repositorio
 
 NIVEIS = {3: "🔴 Urgente", 2: "🟠 Importante", 1: "⚪ Normal"}
@@ -31,23 +32,29 @@ def mostrar_fila(repo: Repositorio) -> None:
     col2.metric("Importantes", sum(t["nivel_final"] == 2 for t in fila))
     col3.metric("Pedem revisão", sum(t["requer_revisao"] for t in fila))
 
+    # Texto vindo do e-mail ou do LLM passa por escapar_markdown antes de qualquer
+    # componente que interpreta markdown (título do expander, caption, markdown)
     for t in fila:
         titulo = (
             f"{NIVEIS[t['nivel_final']]}"
             f"{' · 👀 revisão' if t['requer_revisao'] else ''}"
             f"{' · 🏢 síndico' if t['remetente_sindico'] else ''}"
-            f" · {t['categoria'] or 'sem categoria'} · {t['assunto'] or '(sem assunto)'}"
+            f" · {t['categoria'] or 'sem categoria'}"
+            f" · {escapar_markdown(t['assunto']) if t['assunto'] else '(sem assunto)'}"
         )
         with st.expander(titulo):
-            st.caption(f"{t['remetente']} · recebido em {t['recebido_em']:%d/%m %H:%M} · status: {t['status']}")
+            st.caption(
+                f"{escapar_markdown(t['remetente'])} · recebido em {t['recebido_em']:%d/%m %H:%M}"
+                f" · status: {t['status']}"
+            )
             if t["resumo"]:
-                st.markdown(f"**Resumo:** {t['resumo']}")
+                st.markdown(f"**Resumo:** {escapar_markdown(t['resumo'])}")
             st.markdown("**Por que está nesse nível:**")
             for motivo in t["motivos"]:
-                st.markdown(f"- {motivo}")
+                st.markdown(f"- {escapar_markdown(motivo)}")
             st.text(t["corpo"])
             if t["anexos"]:
-                st.caption("Anexos: " + ", ".join(a["nome"] for a in t["anexos"]))
+                st.caption("Anexos: " + ", ".join(escapar_markdown(a["nome"]) for a in t["anexos"]))
 
             b1, b2 = st.columns(2)
             if b1.button("Assumir", key=f"assumir-{t['id']}", disabled=t["status"] != "pendente"):
