@@ -159,3 +159,20 @@ def test_cadastro_real_carrega_e_todo_gestor_aponta_para_condominio_existente():
     assert all(g and g.condominio.id == "C01" for g in roberto)
     assert cadastro.por_gestor("renatasilveira@gmail.com").papel == "subsindico"
     assert cadastro.por_nome("Santa Clara").qtd_elevadores is None
+
+
+# --- LGPD: motivos não carregam texto do e-mail ------------------------------
+
+
+def test_motivos_nao_carregam_dado_pessoal_do_email():
+    e = email("o elevador parou com a dona Cida do apto 52 dentro", remetente="sindico@solar.com.br")
+    c = classif(urgencia="urgente", motivo="Dona Cida do apto 52 presa no elevador")
+    t = triar(e, c)
+    texto = " ".join(t.motivos)
+    assert "Cida" not in texto and "52" not in texto
+    assert t.nivel_final == Nivel.URGENTE
+
+
+def test_palavra_chave_aparece_pelo_rotulo():
+    t = triar(email("cheiro de gás no hall"), classif(urgencia="normal"))
+    assert any("Palavra-chave crítica (cheiro de gás)" in m for m in t.motivos)

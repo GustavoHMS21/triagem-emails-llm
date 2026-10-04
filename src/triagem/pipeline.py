@@ -60,10 +60,10 @@ def processar(
 def _registrar(triagem: Triagem, repositorio: Repositorio | None) -> Triagem:
     if repositorio:
         repositorio.salvar(triagem)
+    # Log só com o id: assunto e remetente são dado pessoal e ficam no Gmail
     log.info(
-        "%-12s %-10s revisão=%-5s %s",
-        triagem.email.original.id, triagem.nivel_final.name, triagem.requer_revisao,
-        triagem.email.assunto[:60],
+        "%-12s %-10s revisão=%-5s categoria=%s",
+        triagem.email.original.id, triagem.nivel_final.name, triagem.requer_revisao, triagem.categoria,
     )
     return triagem
 
@@ -88,7 +88,7 @@ def main() -> None:
 
     if args.sem_banco:
         for t in sorted(resultados, key=lambda t: (-t.nivel_final, not t.requer_revisao)):
-            print(f"\n[{t.nivel_final.name}{' | REVISÃO' if t.requer_revisao else ''}] {t.email.assunto}")
+            print(f"\n[{t.nivel_final.name}{' | REVISÃO' if t.requer_revisao else ''}] {t.email.original.id}")
             for motivo in t.motivos:
                 print(f"  - {motivo}")
 

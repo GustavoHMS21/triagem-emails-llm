@@ -14,6 +14,7 @@ e-mails → limpeza → filtro → LLM (JSON validado) → regras de negócio �
 - **Filtro:** propaganda (descadastro + marcas de marketing) vai direto para o banco como `lixo`, sem chamar o LLM. O restante é classificado por ordem de risco: e-mails com palavra-chave crítica passam primeiro.
 - **LLM:** Qwen3 via Ollama, com saída restrita a um JSON Schema e validada com Pydantic. Classifica só o que depende de linguagem: categoria e urgência do conteúdo.
 - **Regras de negócio:** síndico e subsíndico sobem um nível, elevador parado em prédio com um elevador vira urgente, dúvida do modelo vai para revisão humana, palavra-chave crítica funciona como rede de segurança. Cada decisão grava o motivo.
+- **Privacidade:** o conteúdo dos e-mails não é armazenado. O banco guarda só o necessário para a fila (nível, categoria, motivos, status) e o `Message-ID`, usado para abrir a mensagem no Gmail. O LLM roda localmente: nenhum dado sai da máquina.
 - **Falhas:** se o LLM falhar, o e-mail entra na fila com revisão humana; o pipeline não para. Reprocessar é idempotente.
 
 ## Rodando

@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from triagem.formatacao import escapar_markdown
+from triagem.formatacao import escapar_markdown, link_gmail
 
 # Sintaxes que, sem escape, o markdown transformaria em imagem, link ou fórmula
 ATAQUES = {
@@ -33,3 +33,15 @@ def test_texto_comum_continua_legivel():
 
 def test_aceita_valor_que_nao_e_texto():
     assert escapar_markdown(42) == "42"
+
+
+def test_link_gmail_busca_pelo_message_id():
+    assert link_gmail("<abc123@mail.gmail.com>") == (
+        "https://mail.google.com/mail/u/0/#search/rfc822msgid%3A%3Cabc123%40mail.gmail.com%3E"
+    )
+
+
+def test_link_gmail_codifica_id_malicioso():
+    # caracteres que poderiam mudar a URL (outro parâmetro, outro caminho) ficam codificados
+    url = link_gmail("x&y=1#/../evil")
+    assert url.endswith("x%26y%3D1%23%2F..%2Fevil")

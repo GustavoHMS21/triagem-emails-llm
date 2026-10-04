@@ -1,20 +1,24 @@
-"""Etapa 4: persistência no PostgreSQL."""
+"""Etapa 4: persistência no PostgreSQL.
+
+Minimização (LGPD): o conteúdo do e-mail (remetente, assunto, corpo, anexos)
+fica só no Gmail. Aqui vai apenas o necessário para ordenar a fila; email_id
+é a referência para abrir a mensagem original.
+"""
 
 import psycopg
 from psycopg.rows import dict_row
-from psycopg.types.json import Jsonb
 
 from triagem.modelos import Triagem
 
 _INSERIR = """
 INSERT INTO triagens (
-    email_id, remetente, assunto_original, assunto, corpo, anexos, recebido_em,
-    categoria, outras_categorias, urgencia_llm, resumo, classificacao,
+    email_id, recebido_em, tem_anexo,
+    categoria, outras_categorias, urgencia_llm,
     condominio_id, remetente_sindico, nivel_final, requer_revisao, motivos,
     modelo, prompt_versao
 ) VALUES (
-    %(email_id)s, %(remetente)s, %(assunto_original)s, %(assunto)s, %(corpo)s, %(anexos)s, %(recebido_em)s,
-    %(categoria)s, %(outras_categorias)s, %(urgencia_llm)s, %(resumo)s, %(classificacao)s,
+    %(email_id)s, %(recebido_em)s, %(tem_anexo)s,
+    %(categoria)s, %(outras_categorias)s, %(urgencia_llm)s,
     %(condominio_id)s, %(remetente_sindico)s, %(nivel_final)s, %(requer_revisao)s, %(motivos)s,
     %(modelo)s, %(prompt_versao)s
 )
@@ -66,17 +70,11 @@ class Repositorio:
         email, c = t.email.original, t.classificacao
         params = {
             "email_id": email.id,
-            "remetente": email.remetente,
-            "assunto_original": email.assunto,
-            "assunto": t.email.assunto,
-            "corpo": t.email.corpo,
-            "anexos": Jsonb([a.model_dump() for a in email.anexos]),
             "recebido_em": email.recebido_em,
+            "tem_anexo": bool(email.anexos),
             "categoria": t.categoria,
             "outras_categorias": c.outras_categorias if c else [],
             "urgencia_llm": c.urgencia if c else None,
-            "resumo": c.resumo if c else None,
-            "classificacao": Jsonb(c.model_dump()) if c else None,
             "condominio_id": t.condominio_id,
             "remetente_sindico": t.remetente_sindico,
             "nivel_final": int(t.nivel_final),

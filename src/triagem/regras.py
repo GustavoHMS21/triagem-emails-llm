@@ -71,6 +71,9 @@ class CadastroCondominios:
             ]
         return cls(condominios, gestores)
 
+    def por_id(self, condominio_id: str | None) -> Condominio | None:
+        return self._por_id.get(condominio_id) if condominio_id else None
+
     def por_gestor(self, email: str) -> Gestor | None:
         """Síndico ou subsíndico pelo e-mail do remetente. Assinatura no texto não conta."""
         return self._gestor_por_email.get(email.strip().lower())
@@ -98,25 +101,28 @@ def _normalizar(texto: str) -> str:
 # Não substituem o LLM: só pegam o caso em que ele subestimou algo grave.
 # O nível indicado é o piso; quem confirma é a atendente na revisão.
 
-PALAVRAS_CRITICAS: dict[str, Nivel] = {
-    r"cheiro de g[aá]s|vazamento de g[aá]s": Nivel.URGENTE,
-    r"pres[oa]s? no elevador|gente presa|pessoa presa": Nivel.URGENTE,
-    r"elevador.{0,60}dentro|dentro do elevador": Nivel.URGENTE,  # "parou com a dona Cida dentro" (E039)
-    r"inc[eê]ndio|fuma[cç]a|fa[ií]sca|curto[- ]circuito": Nivel.URGENTE,
-    r"cheiro de queimado": Nivel.URGENTE,  # E132
-    r"fio desencapado": Nivel.URGENTE,
-    r"cano estourad|estourou o cano|alagad|alagamento": Nivel.URGENTE,
-    r"vazamento|vazando|vasament|infiltra": Nivel.IMPORTANTE,  # "vasamento", erro comum (E064)
-    r"sem [aá]gua|falta de [aá]gua": Nivel.IMPORTANTE,
-    r"sem luz|falta de luz|apag[aã]o": Nivel.IMPORTANTE,
-    r"port[aã]o.{0,30}(n[aã]o fecha|aberto|quebrad)": Nivel.IMPORTANTE,
+# padrão -> (nível, rótulo). O motivo gravado usa o rótulo, nunca o trecho
+# encontrado: padrões como "elevador.{0,60}dentro" capturam texto livre do
+# e-mail, que pode ter nome de pessoa.
+PALAVRAS_CRITICAS: dict[str, tuple[Nivel, str]] = {
+    r"cheiro de g[aá]s|vazamento de g[aá]s": (Nivel.URGENTE, "cheiro de gás"),
+    r"pres[oa]s? no elevador|gente presa|pessoa presa": (Nivel.URGENTE, "pessoa presa no elevador"),
+    r"elevador.{0,60}dentro|dentro do elevador": (Nivel.URGENTE, "pessoa presa no elevador"),  # E039
+    r"inc[eê]ndio|fuma[cç]a|fa[ií]sca|curto[- ]circuito": (Nivel.URGENTE, "fogo ou faísca"),
+    r"cheiro de queimado": (Nivel.URGENTE, "cheiro de queimado"),  # E132
+    r"fio desencapado": (Nivel.URGENTE, "fio desencapado"),
+    r"cano estourad|estourou o cano|alagad|alagamento": (Nivel.URGENTE, "cano estourado ou alagamento"),
+    r"vazamento|vazando|vasament|infiltra": (Nivel.IMPORTANTE, "vazamento ou infiltração"),  # "vasamento" (E064)
+    r"sem [aá]gua|falta de [aá]gua": (Nivel.IMPORTANTE, "falta de água"),
+    r"sem luz|falta de luz|apag[aã]o": (Nivel.IMPORTANTE, "falta de luz"),
+    r"port[aã]o.{0,30}(n[aã]o fecha|aberto|quebrad)": (Nivel.IMPORTANTE, "portão que não fecha"),
 }
-_PALAVRAS_COMPILADAS = [(re.compile(p, re.IGNORECASE), n) for p, n in PALAVRAS_CRITICAS.items()]
+_PALAVRAS_COMPILADAS = [(re.compile(p, re.IGNORECASE), n, r) for p, (n, r) in PALAVRAS_CRITICAS.items()]
 
 
 def nivel_por_palavra_chave(texto: str) -> tuple[Nivel, str] | None:
-    """Devolve o maior nível acionado por palavra-chave e o trecho encontrado."""
-    achados = [(n, m.group(0)) for p, n in _PALAVRAS_COMPILADAS if (m := p.search(texto))]
+    """Devolve o maior nível acionado por palavra-chave e o rótulo do padrão."""
+    achados = [(n, rotulo) for p, n, rotulo in _PALAVRAS_COMPILADAS if p.search(texto)]
     return max(achados, key=lambda a: a[0]) if achados else None
 
 
@@ -145,7 +151,8 @@ def aplicar_regras(
         motivos.append("LLM não devolveu classificação válida")
     else:
         nivel = Nivel.de_texto(classificacao.urgencia)
-        motivos.append(f"LLM: {classificacao.urgencia} ({classificacao.motivo})")
+        # Só o nível: o "motivo" do LLM repete fatos do e-mail (dado pessoal) e não é gravado
+        motivos.append(f"LLM: {classificacao.urgencia}")
 
         # 2. Dúvida entre dois níveis: fica no mais alto, mas uma pessoa confere
         if classificacao.em_duvida:
@@ -177,10 +184,10 @@ def aplicar_regras(
     # 4. Rede de segurança por palavra-chave (roda mesmo se o LLM falhou)
     achado = nivel_por_palavra_chave(f"{email.assunto}\n{email.corpo}")
     if achado and achado[0] > nivel:
-        nivel_chave, trecho = achado
+        nivel_chave, rotulo = achado
         nivel = nivel_chave
         revisao = True
-        motivos.append(f'Palavra-chave crítica "{trecho}": subiu para {nivel_chave.name.lower()}')
+        motivos.append(f"Palavra-chave crítica ({rotulo}): subiu para {nivel_chave.name.lower()}")
 
     # 5. Conteúdo só no anexo
     if email.corpo_vazio and email.original.anexos:

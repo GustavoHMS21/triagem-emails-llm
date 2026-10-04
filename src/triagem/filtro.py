@@ -97,7 +97,7 @@ PALAVRAS_SO_FILA: dict[str, Nivel] = {
 }
 _PALAVRAS_FILA = [
     (re.compile(padrao, re.IGNORECASE), nivel)
-    for padrao, nivel in {**PALAVRAS_CRITICAS, **PALAVRAS_SO_FILA}.items()
+    for padrao, nivel in {**{p: n for p, (n, _) in PALAVRAS_CRITICAS.items()}, **PALAVRAS_SO_FILA}.items()
 ]
 
 
