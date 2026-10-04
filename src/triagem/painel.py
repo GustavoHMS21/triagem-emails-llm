@@ -38,7 +38,7 @@ def mostrar_fila(repo: Repositorio) -> None:
         titulo = (
             f"{NIVEIS[t['nivel_final']]}"
             f"{' · 👀 revisão' if t['requer_revisao'] else ''}"
-            f"{' · 🏢 síndico' if t['remetente_sindico'] else ''}"
+            f"{' · 🏢 síndico/subsíndico' if t['remetente_sindico'] else ''}"
             f" · {t['categoria'] or 'sem categoria'}"
             f" · {escapar_markdown(t['assunto']) if t['assunto'] else '(sem assunto)'}"
         )

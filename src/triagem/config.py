@@ -14,6 +14,7 @@ class Config(BaseSettings):
     database_url: str = "postgresql://triagem:triagem@127.0.0.1:5433/triagem"
 
     condominios_csv: Path = Path("data/condominios.csv")
+    gestores_csv: Path = Path("data/gestores.csv")
 
 
 config = Config()

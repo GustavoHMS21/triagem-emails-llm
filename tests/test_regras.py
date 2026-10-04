@@ -4,12 +4,21 @@ import pytest
 
 from triagem.limpeza import limpar
 from triagem.modelos import Anexo, Classificacao, Email, Nivel
-from triagem.regras import CadastroCondominios, Condominio, aplicar_regras
+from triagem.config import config
+from triagem.regras import CadastroCondominios, Condominio, Gestor, aplicar_regras
 
-CADASTRO = CadastroCondominios([
-    Condominio("C01", "Condomínio Jardim das Acácias", 2, "sindico@acacias.com.br"),
-    Condominio("C02", "Edifício Solar do Parque", 1, "sindico@solar.com.br"),
-])
+ACACIAS = Condominio("C01", "Condomínio Jardim das Acácias", 2)
+SOLAR = Condominio("C02", "Edifício Solar do Parque", 1)
+PORTAL = Condominio("C08", "Residencial Portal do Sol", None)  # nº de elevadores não informado
+CADASTRO = CadastroCondominios(
+    [ACACIAS, SOLAR, PORTAL],
+    [
+        Gestor(SOLAR, "sindico", "Síndico Solar", "sindico@solar.com.br"),
+        Gestor(ACACIAS, "sindico", "Roberto", "roberto@empresa.com.br"),
+        Gestor(ACACIAS, "sindico", "Roberto", "roberto.sindico@gmail.com"),
+        Gestor(ACACIAS, "subsindico", "Renata", "renata@gmail.com"),
+    ],
+)
 
 
 def email(corpo="texto qualquer do morador", remetente="morador@gmail.com", assunto="assunto", anexos=()):
@@ -114,3 +123,39 @@ def test_urgente_no_assunto_nao_aciona_nada():
 def test_corpo_vazio_com_anexo_vai_para_revisao():
     t = triar(email("segue anexo", anexos=[Anexo(nome="foto.jpg")]), classif())
     assert t.requer_revisao
+
+
+# --- Cadastro: vários e-mails, subsíndico, elevadores desconhecidos ----------
+
+
+def test_sindico_com_segundo_email_tambem_sobe():
+    t = triar(email(remetente="roberto.sindico@gmail.com"), classif(urgencia="normal"))
+    assert t.nivel_final == Nivel.IMPORTANTE
+    assert t.condominio_id == "C01"
+
+
+def test_subsindico_sobe_um_nivel_e_o_motivo_diz_o_papel():
+    t = triar(email(remetente="renata@gmail.com"), classif(urgencia="importante"))
+    assert t.nivel_final == Nivel.URGENTE
+    assert t.remetente_sindico
+    assert any("subsindico de Condomínio Jardim das Acácias" in m for m in t.motivos)
+
+
+def test_elevador_parado_com_qtd_desconhecida_vira_urgente_com_revisao():
+    c = classif(urgencia="importante", elevador_parado=True, condominio_mencionado="Portal do Sol")
+    t = triar(email("o elevador parou"), c)
+    assert t.nivel_final == Nivel.URGENTE
+    assert t.requer_revisao
+
+
+def test_nome_de_condominio_generico_nao_casa_com_o_primeiro_da_lista():
+    # "Condomínio" normalizado vira vazio, e "" in "qualquer texto" é True em Python
+    assert CADASTRO.por_nome("Condomínio") is None
+
+
+def test_cadastro_real_carrega_e_todo_gestor_aponta_para_condominio_existente():
+    cadastro = CadastroCondominios.de_csv(config.condominios_csv, config.gestores_csv)
+    roberto = [cadastro.por_gestor(e) for e in ("roberto@nogueiratransportes.com.br", "roberto.nogueira.sindico@gmail.com")]
+    assert all(g and g.condominio.id == "C01" for g in roberto)
+    assert cadastro.por_gestor("renatasilveira@gmail.com").papel == "subsindico"
+    assert cadastro.por_nome("Santa Clara").qtd_elevadores is None

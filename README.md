@@ -13,7 +13,7 @@ e-mails → limpeza → filtro → LLM (JSON validado) → regras de negócio �
 - **Limpeza:** remove histórico de resposta, rodapé de celular, assinatura e "URGENTE" do assunto; preserva o conteúdo de e-mails encaminhados.
 - **Filtro:** propaganda (descadastro + marcas de marketing) vai direto para o banco como `lixo`, sem chamar o LLM. O restante é classificado por ordem de risco: e-mails com palavra-chave crítica passam primeiro.
 - **LLM:** Qwen3 via Ollama, com saída restrita a um JSON Schema e validada com Pydantic. Classifica só o que depende de linguagem: categoria e urgência do conteúdo.
-- **Regras de negócio:** síndico sobe um nível, elevador parado em prédio com um elevador vira urgente, dúvida do modelo vai para revisão humana, palavra-chave crítica funciona como rede de segurança. Cada decisão grava o motivo.
+- **Regras de negócio:** síndico e subsíndico sobem um nível, elevador parado em prédio com um elevador vira urgente, dúvida do modelo vai para revisão humana, palavra-chave crítica funciona como rede de segurança. Cada decisão grava o motivo.
 - **Falhas:** se o LLM falhar, o e-mail entra na fila com revisão humana; o pipeline não para. Reprocessar é idempotente.
 
 ## Rodando
@@ -45,12 +45,14 @@ uv run streamlit run src/triagem/painel.py                   # fila (http://127.
 | `src/triagem/regras.py` | Regras de negócio e rede de segurança |
 | `src/triagem/repositorio.py` | Persistência no PostgreSQL |
 | `src/triagem/painel.py` | Painel da fila (Streamlit) |
-| `data/condominios.csv` | Condomínios, nº de elevadores e e-mail do síndico |
-| `data/amostras/` | Amostra de e-mails para avaliação |
+| `data/condominios.csv` | Condomínios e nº de elevadores (vazio = não informado) |
+| `data/gestores.csv` | Síndicos e subsíndicos: um e-mail por linha |
+| `data/amostras/` | Amostra de e-mails e gabarito para avaliação |
 
 ## Roadmap
 
 - Leitura direta do Gmail (nova `FonteEmails`), com pool de conexões (`psycopg_pool`) para o processo contínuo
 - Login no painel
+- Alertas para síndico e subsíndico sobre ocorrências do condomínio
 - Leitura do conteúdo dos anexos (PDF e fotos)
 - Integração com o sistema de gestão do condomínio

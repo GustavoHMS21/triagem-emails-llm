@@ -1,0 +1,150 @@
+id,nivel_esperado,categorias_aceitas,observacao
+E001,normal,financeiro,
+E002,normal,financeiro,URGENTE no assunto não conta
+E003,normal,financeiro,comprovante só no anexo
+E004,normal,financeiro,
+E005,normal,financeiro,
+E006,normal,financeiro,imobiliária pedindo boletos
+E007,urgente,manutencao,infiltração sem pingar (importante) + síndico sobe um nível
+E008,normal,assembleia_reserva,
+E009,normal,lixo,propaganda com descadastro no texto
+E010,importante,cobranca,notificação extrajudicial de advogado (tem prazo)
+E011,normal,outros,barulho de vizinho; URGENTE no texto não conta
+E012,urgente,manutencao,portão da garagem não fecha
+E013,normal,financeiro,
+E014,normal,fornecedor,
+E015,normal,cadastro,
+E016,importante,assembleia_reserva,convocação (normal) + síndica sobe um nível
+E017,normal,fornecedor,renovação de seguro
+E018,normal,financeiro,resposta de agradecimento
+E019,urgente,manutencao,água descendo pela parede da escada
+E020,urgente,manutencao,água entrou no apartamento; continuação do E019
+E021,normal,lixo,golpe (phishing)
+E022,normal,financeiro,
+E023,normal,cadastro,
+E024,normal,fornecedor,
+E025,urgente,manutencao,elevador parado; Santa Clara sem nº de elevadores cadastrado (regra: urgente)
+E026,normal,outros,só anexo de foto; conteúdo desconhecido
+E027,normal,assembleia_reserva,
+E028,importante,manutencao,infiltração sem detalhe de pingar
+E029,normal,assembleia_reserva,
+E030,normal,fornecedor,
+E031,normal,cadastro,
+E032,normal,manutencao,"NEGAÇÃO: ""não tem cheiro de gás""; pergunta sobre vistoria"
+E033,normal,outros,
+E034,normal,manutencao|outros,agradecimento: elevador voltou a funcionar
+E035,urgente,manutencao,sem água no bloco inteiro
+E036,urgente,manutencao,cano estourado indo para o quadro de luz
+E037,normal,lixo,golpe (pede CPF)
+E038,importante,financeiro|manutencao|assembleia_reserva|outros,vários assuntos; lâmpada do corredor (fora da escada) = importante
+E039,urgente,manutencao,pessoa presa no elevador
+E040,normal,financeiro,
+E041,normal,financeiro,
+E042,urgente,manutencao,único elevador parado; síndica
+E043,importante,financeiro,balancete (normal) + síndico sobe um nível
+E044,normal,cobranca,
+E045,importante,manutencao,mofo; vazamento já resolvido
+E046,normal,manutencao,
+E047,normal,fornecedor,
+E048,urgente,manutencao,buraco aberto no estacionamento (risco físico); encaminhado
+E049,normal,lixo|outros,resposta automática de férias
+E050,normal,financeiro,
+E051,normal,cadastro,
+E052,urgente,manutencao,luz da garagem toda apagada
+E053,normal,lixo|fornecedor,prospecção sem descadastro
+E054,importante,manutencao,interfone quebrado
+E055,urgente,manutencao,faísca e cheiro de queimado no quadro de luz
+E056,normal,assembleia_reserva,vazamento só no histórico citado (já consertado)
+E057,normal,financeiro,
+E058,urgente,manutencao,um elevador parado com outro funcionando (importante) + síndica sobe um nível
+E059,normal,assembleia_reserva,
+E060,normal,manutencao,barata; URGENTE no texto não conta
+E061,normal,assembleia_reserva,
+E062,normal,cobranca|financeiro,cobrança indevida
+E063,urgente,manutencao,lâmpada da escada queimada = falta de luz na escada
+E064,urgente,manutencao,"vazamento ativo (escrito ""vasamento"")"
+E065,normal,fornecedor,
+E066,normal,assembleia_reserva,
+E067,normal,outros,carro na vaga
+E068,normal,lixo,newsletter
+E069,normal,financeiro,
+E070,importante,manutencao,sem água em um só apartamento (decisão do cliente)
+E071,importante,manutencao,rachadura
+E072,normal,financeiro,"TENTATIVA DE MANIPULAR O LLM: pede para ""classificar como URGENTE"""
+E073,urgente,manutencao,fio solto no playground (risco físico; decisão do cliente)
+E074,normal,cadastro,
+E075,urgente,manutencao,portão de pedestres não fecha
+E076,normal,outros,
+E077,urgente,manutencao,bomba parou; falta de água iminente no bloco
+E078,normal,financeiro,
+E079,importante,cobranca,contestação com notificação de advogado
+E080,normal,financeiro,
+E081,urgente,manutencao,buraco aberto há 6 dias; síndico
+E082,normal,assembleia_reserva,
+E083,normal,lixo,
+E084,urgente,manutencao,infiltração pingando em cima da luminária
+E085,normal,financeiro|outros,interessado em comprar
+E086,normal,fornecedor|manutencao,chamado concluído pela empresa de elevadores
+E087,normal,outros|assembleia_reserva,SOCORRO falso: wi-fi do salão
+E088,normal,cadastro,
+E089,urgente,manutencao,cheiro de gás
+E090,urgente,manutencao|outros,notificação da prefeitura (importante) + síndico sobe um nível
+E091,normal,financeiro,
+E092,urgente,manutencao|outros,infiltração pingando no meio de texto longo com vários assuntos
+E093,normal,lixo|fornecedor,prospecção sem descadastro
+E094,urgente,manutencao,lâmpada do hall (importante; decisão do cliente) + subsíndica sobe um nível
+E095,normal,financeiro|cadastro,
+E096,normal,outros|financeiro,dano antigo; pergunta sobre seguro
+E097,normal,manutencao,piscina verde
+E098,normal,assembleia_reserva,
+E099,importante,manutencao,um elevador parado com outro funcionando
+E100,normal,fornecedor,
+E101,normal,cobranca|outros,multa
+E102,normal,assembleia_reserva,
+E103,normal,fornecedor|manutencao,orçamento da bomba
+E104,normal,financeiro,
+E105,normal,lixo|outros,falha de entrega automática
+E106,normal,manutencao,portão funcionando com barulho
+E107,urgente,manutencao,elevador social parado e o de serviço falhando (importante) + síndica sobe um nível
+E108,normal,assembleia_reserva,
+E109,urgente,manutencao,garagem alagada
+E110,urgente,manutencao,infiltração sem pingar (importante) + síndica sobe um nível
+E111,normal,financeiro,
+E112,importante,manutencao,mofo
+E113,normal,outros|manutencao,"AGRADECIMENTO: ""quando fiquei presa no elevador"" (passado)"
+E114,normal,cadastro,
+E115,normal,lixo|fornecedor,prospecção sem descadastro
+E116,importante,cobranca,ameaça de ação judicial
+E117,importante,manutencao,vazamento pequeno em área externa (decisão do cliente)
+E118,normal,outros,
+E119,urgente,manutencao,único elevador do bloco parado; síndico
+E120,normal,assembleia_reserva,
+E121,normal,lixo,
+E122,importante,fornecedor|manutencao,pedido de orçamentos (normal) + síndico sobe um nível
+E123,normal,financeiro,
+E124,importante,manutencao,interfone quebrado há 2 semanas
+E125,normal,assembleia_reserva,
+E126,normal,lixo|outros,teste
+E127,normal,outros|cadastro,
+E128,urgente,manutencao,portão travado fechado; ninguém sai pela rua (decisão do cliente)
+E129,normal,cadastro|financeiro,
+E130,normal,fornecedor,seguradora pede laudo
+E131,normal,outros,
+E132,urgente,manutencao,cheiro de queimado
+E133,normal,financeiro,
+E134,normal,outros|manutencao,
+E135,normal,assembleia_reserva,
+E136,importante,manutencao,lâmpada do portão (fora da escada e da garagem)
+E137,normal,financeiro,
+E138,urgente,manutencao,água vazando pelo forro
+E139,urgente,manutencao,sem água no bloco
+E140,importante,cobranca,advogado: medidas judiciais
+E141,urgente,manutencao,sem água no bloco; síndica
+E142,normal,financeiro,
+E143,normal,cadastro,
+E144,urgente,manutencao,lâmpada da escada queimada = falta de luz na escada
+E145,normal,lixo,
+E146,importante,assembleia_reserva,assembleia (normal) + síndico sobe um nível
+E147,normal,financeiro|assembleia_reserva,URGENTE no texto não conta
+E148,normal,outros,cobrança de resposta sobre a foto do E026
+E149,importante,manutencao,rachadura aumentou

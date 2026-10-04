@@ -6,9 +6,10 @@ cliente fica aqui, para ser testável e auditável:
   1. Falha do LLM                -> revisão humana
   2. Dúvida entre dois níveis    -> fica no mais alto + revisão humana
   3. Elevador parado             -> urgente se o prédio tem um só elevador
+                                    (ou se o nº de elevadores é desconhecido, + revisão)
   4. Palavra-chave crítica       -> rede de segurança caso o LLM subestime
   5. Corpo vazio com anexo       -> revisão humana (anexo não é lido na v1)
-  6. Remetente é síndico         -> sobe um nível (prioridade de negócio)
+  6. Remetente é síndico/subsíndico -> sobe um nível (prioridade de negócio)
 
 Cada regra que mexe no resultado deixa um motivo, que aparece no painel.
 """
@@ -28,35 +29,58 @@ from triagem.modelos import Classificacao, EmailLimpo, Nivel, Triagem
 class Condominio:
     id: str
     nome: str
-    qtd_elevadores: int
-    email_sindico: str
+    qtd_elevadores: int | None  # None: não informado
+
+
+@dataclass(frozen=True)
+class Gestor:
+    """Síndico ou subsíndico. Uma pessoa pode ter mais de um e-mail (uma linha por e-mail)."""
+
+    condominio: Condominio
+    papel: str  # "sindico" ou "subsindico"
+    nome: str
+    email: str
 
 
 class CadastroCondominios:
-    def __init__(self, condominios: list[Condominio]):
+    def __init__(self, condominios: list[Condominio], gestores: list[Gestor] = ()):
         self._por_id = {c.id: c for c in condominios}
-        self._por_email_sindico = {c.email_sindico.lower(): c for c in condominios if c.email_sindico}
+        self._gestor_por_email = {g.email.lower(): g for g in gestores}
 
     @classmethod
-    def de_csv(cls, caminho: Path) -> "CadastroCondominios":
-        with open(caminho, encoding="utf-8", newline="") as f:
-            return cls([
+    def de_csv(cls, caminho_condominios: Path, caminho_gestores: Path) -> "CadastroCondominios":
+        with open(caminho_condominios, encoding="utf-8", newline="") as f:
+            condominios = [
                 Condominio(
                     id=linha["id"],
                     nome=linha["nome"],
-                    qtd_elevadores=int(linha["qtd_elevadores"]),
-                    email_sindico=linha["email_sindico"].strip(),
+                    qtd_elevadores=int(linha["qtd_elevadores"]) if linha["qtd_elevadores"].strip() else None,
                 )
                 for linha in csv.DictReader(f)
-            ])
+            ]
+        por_id = {c.id: c for c in condominios}
+        with open(caminho_gestores, encoding="utf-8", newline="") as f:
+            gestores = [
+                Gestor(
+                    condominio=por_id[linha["condominio_id"]],
+                    papel=linha["papel"].strip(),
+                    nome=linha["nome"].strip(),
+                    email=linha["email"].strip(),
+                )
+                for linha in csv.DictReader(f)
+            ]
+        return cls(condominios, gestores)
 
-    def por_sindico(self, email: str) -> Condominio | None:
-        return self._por_email_sindico.get(email.strip().lower())
+    def por_gestor(self, email: str) -> Gestor | None:
+        """Síndico ou subsíndico pelo e-mail do remetente. Assinatura no texto não conta."""
+        return self._gestor_por_email.get(email.strip().lower())
 
     def por_nome(self, nome: str | None) -> Condominio | None:
         if not nome:
             return None
         alvo = _normalizar(nome)
+        if not alvo:  # ex.: o LLM devolveu só "Condomínio"
+            return None
         for c in self._por_id.values():
             nome_c = _normalizar(c.nome)
             if alvo in nome_c or nome_c in alvo:
@@ -109,8 +133,10 @@ def aplicar_regras(
     motivos: list[str] = []
     revisao = False
 
-    sindico_de = cadastro.por_sindico(email.original.remetente)
-    condominio = sindico_de or cadastro.por_nome(classificacao and classificacao.condominio_mencionado)
+    gestor = cadastro.por_gestor(email.original.remetente)
+    condominio = gestor.condominio if gestor else cadastro.por_nome(
+        classificacao and classificacao.condominio_mencionado
+    )
 
     # 1. Falha do LLM
     if classificacao is None:
@@ -133,10 +159,17 @@ def aplicar_regras(
 
         # 3. Elevador: o LLM não sabe quantos elevadores o prédio tem; o cadastro sabe
         if classificacao.elevador_parado and nivel < Nivel.URGENTE:
+            # Na dúvida, urgente + revisão: perder urgência custa mais que alarme falso
             if condominio is None:
                 nivel = Nivel.URGENTE
                 revisao = True
                 motivos.append("Elevador parado em condomínio não identificado: tratado como urgente")
+            elif condominio.qtd_elevadores is None:
+                nivel = Nivel.URGENTE
+                revisao = True
+                motivos.append(
+                    f"Elevador parado e {condominio.nome} não tem nº de elevadores cadastrado: tratado como urgente"
+                )
             elif condominio.qtd_elevadores <= 1:
                 nivel = Nivel.URGENTE
                 motivos.append(f"Elevador parado e {condominio.nome} tem um só elevador")
@@ -154,11 +187,13 @@ def aplicar_regras(
         revisao = True
         motivos.append("Corpo vazio com anexo: conteúdo não lido na v1")
 
-    # 6. Síndico sobe um nível (prioridade de negócio, aplicada por último)
-    if sindico_de:
+    # 6. Síndico ou subsíndico sobe um nível (prioridade de negócio, aplicada por último)
+    if gestor:
         novo = nivel.subir()
         if novo > nivel:
-            motivos.append(f"Remetente é síndico de {sindico_de.nome}: subiu para {novo.name.lower()}")
+            motivos.append(
+                f"Remetente é {gestor.papel} de {gestor.condominio.nome}: subiu para {novo.name.lower()}"
+            )
         nivel = novo
 
     return Triagem(
@@ -166,7 +201,7 @@ def aplicar_regras(
         classificacao=classificacao,
         categoria=classificacao.categoria if classificacao else None,
         condominio_id=condominio.id if condominio else None,
-        remetente_sindico=sindico_de is not None,
+        remetente_sindico=gestor is not None,  # síndico ou subsíndico
         nivel_final=nivel,
         requer_revisao=revisao,
         motivos=motivos,

@@ -1,6 +1,12 @@
-id,nome,bairro,qtd_elevadores,email_sindico
-C01,Condomínio Jardim das Acácias,Vila Assunção,2,marcos.sindico@acacias.com.br
-C02,Edifício Solar do Parque,Centro,1,sindico.solar@gmail.com
-C03,Residencial Vila Bastos,Vila Bastos,0,renata.vb@hotmail.com
-C04,Condomínio Torres do Campestre,Campestre,4,administracao.torrescampestre@gmail.com
-C05,Edifício Monte Azul,Jardim,1,paulo.monteazul@outlook.com
+id,nome,qtd_elevadores
+C01,Condomínio Jardim das Acácias,2
+C02,Edifício Solar do Parque,1
+C03,Residencial Vila Bastos,0
+C04,Condomínio Torres do Campestre,4
+C05,Edifício Monte Azul,1
+C06,Edifício Solar do Vale,2
+C07,Condomínio Parque das Flores,1
+C08,Residencial Portal do Sol,
+C09,Edifício Bela Vista,2
+C10,Edifício Santa Clara,
+C11,Residencial Vila Rica,

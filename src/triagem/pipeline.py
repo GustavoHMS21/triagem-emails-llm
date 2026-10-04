@@ -82,7 +82,7 @@ def main() -> None:
         resultados = processar(
             fonte=FonteJson(args.caminho),
             classificador=Classificador(llm, config.llm_tentativas),
-            cadastro=CadastroCondominios.de_csv(config.condominios_csv),
+            cadastro=CadastroCondominios.de_csv(config.condominios_csv, config.gestores_csv),
             repositorio=repositorio,
         )
 
