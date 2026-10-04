@@ -6,7 +6,9 @@ services:
       POSTGRES_PASSWORD: triagem
       POSTGRES_DB: triagem
     ports:
-      - "5433:5432"
+      # Só esta máquina acessa. Sem o 127.0.0.1, o Docker publica em todas as
+      # interfaces (e, no Linux, passa por cima do firewall do sistema).
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Scripts em db/ rodam na primeira subida (banco vazio), em ordem alfabética
