@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  qualidade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      # --locked: falha se o uv.lock não corresponder ao pyproject.toml
+      - name: Instalar dependências
+        run: uv sync --locked
+
+      # Do mais barato ao mais caro: erro de estilo aparece em segundos
+      - name: Lint
+        run: uv run ruff check
+
+      - name: Formatação
+        run: uv run ruff format --check
+
+      - name: Tipos
+        run: uv run mypy
+
+      # Os testes usam um LLM falso e não dependem do banco: sem Ollama nem Postgres no CI
+      - name: Testes
+        run: uv run pytest

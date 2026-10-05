@@ -85,9 +85,7 @@ class Classificacao(BaseModel):
         default=None, description="O outro nível considerado, quando em_duvida=true"
     )
     elevador_parado: bool = Field(description="true se relata elevador parado ou quebrado")
-    condominio_mencionado: str | None = Field(
-        default=None, description="Nome do condomínio citado no texto, se houver"
-    )
+    condominio_mencionado: str | None = Field(default=None, description="Nome do condomínio citado no texto, se houver")
     resumo: str = Field(description="Uma frase curta para a fila de atendimento")
     motivo: str = Field(description="Trecho ou fato do e-mail que justifica a urgência")
 

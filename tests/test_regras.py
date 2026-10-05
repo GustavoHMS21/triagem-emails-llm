@@ -2,9 +2,9 @@ from datetime import datetime
 
 import pytest
 
+from triagem.config import config
 from triagem.limpeza import limpar
 from triagem.modelos import Anexo, Classificacao, Email, Nivel
-from triagem.config import config
 from triagem.regras import CadastroCondominios, Condominio, Gestor, aplicar_regras
 
 ACACIAS = Condominio("C01", "Condomínio Jardim das Acácias", 2)
@@ -22,16 +22,26 @@ CADASTRO = CadastroCondominios(
 
 
 def email(corpo="texto qualquer do morador", remetente="morador@gmail.com", assunto="assunto", anexos=()):
-    return limpar(Email(
-        id="t1", remetente=remetente, assunto=assunto, corpo=corpo,
-        recebido_em=datetime(2026, 10, 1, 9, 0), anexos=list(anexos),
-    ))
+    return limpar(
+        Email(
+            id="t1",
+            remetente=remetente,
+            assunto=assunto,
+            corpo=corpo,
+            recebido_em=datetime(2026, 10, 1, 9, 0),
+            anexos=list(anexos),
+        )
+    )
 
 
 def classif(**kwargs):
     base = dict(
-        categoria="manutencao", urgencia="normal", em_duvida=False,
-        elevador_parado=False, resumo="r", motivo="m",
+        categoria="manutencao",
+        urgencia="normal",
+        em_duvida=False,
+        elevador_parado=False,
+        resumo="r",
+        motivo="m",
     )
     return Classificacao(**{**base, **kwargs})
 
@@ -155,7 +165,8 @@ def test_nome_de_condominio_generico_nao_casa_com_o_primeiro_da_lista():
 
 def test_cadastro_real_carrega_e_todo_gestor_aponta_para_condominio_existente():
     cadastro = CadastroCondominios.de_csv(config.condominios_csv, config.gestores_csv)
-    roberto = [cadastro.por_gestor(e) for e in ("roberto@nogueiratransportes.com.br", "roberto.nogueira.sindico@gmail.com")]
+    emails = ("roberto@nogueiratransportes.com.br", "roberto.nogueira.sindico@gmail.com")
+    roberto = [cadastro.por_gestor(e) for e in emails]
     assert all(g and g.condominio.id == "C01" for g in roberto)
     assert cadastro.por_gestor("renatasilveira@gmail.com").papel == "subsindico"
     assert cadastro.por_nome("Santa Clara").qtd_elevadores is None

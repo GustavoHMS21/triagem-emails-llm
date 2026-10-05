@@ -13,7 +13,12 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8.3"]
+dev = [
+    "mypy>=2.4.0",
+    "pandas-stubs>=3.0.5.260914",
+    "pytest>=8.3",
+    "ruff>=0.16.10",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -25,3 +30,18 @@ packages = ["src/triagem"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# F: erros reais; E/W: estilo PEP 8; I: ordem dos imports; B: armadilhas comuns; UP: sintaxe moderna
+select = ["F", "E", "W", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src"]
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true

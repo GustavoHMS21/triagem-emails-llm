@@ -6,7 +6,7 @@ fica só no Gmail. Aqui vai apenas o necessário para ordenar a fila; email_id
 """
 
 import psycopg
-from psycopg.rows import dict_row
+from psycopg.rows import DictRow, dict_row
 
 from triagem.modelos import Triagem
 
@@ -47,17 +47,17 @@ class Repositorio:
 
     def __init__(self, database_url: str):
         self.database_url = database_url
-        self._conn: psycopg.Connection | None = None
+        self._conn: psycopg.Connection[DictRow] | None = None
 
     def __enter__(self) -> "Repositorio":
         self._conn = psycopg.connect(self.database_url, row_factory=dict_row, autocommit=True)
         return self
 
-    def __exit__(self, *_) -> None:
-        self._conn.close()
+    def __exit__(self, *_: object) -> None:
+        self.conn.close()
 
     @property
-    def conn(self) -> psycopg.Connection:
+    def conn(self) -> psycopg.Connection[DictRow]:
         if self._conn is None:
             raise RuntimeError("Use o Repositorio dentro de um bloco `with`")
         return self._conn
@@ -85,7 +85,7 @@ class Repositorio:
         }
         return self.conn.execute(_INSERIR, params).rowcount == 1
 
-    def fila(self, status: list[str] | None = None) -> list[dict]:
+    def fila(self, status: list[str] | None = None) -> list[DictRow]:
         return self.conn.execute(_FILA, {"status": status or ["pendente", "em_atendimento"]}).fetchall()
 
     def atualizar_status(self, triagem_id: int, status: str) -> None:

@@ -1,8 +1,7 @@
 import re
+from datetime import datetime, timedelta
 
 import pytest
-
-from datetime import datetime, timedelta
 
 from triagem.formatacao import escapar_markdown, link_gmail, rotulo_categoria, tempo_de_espera
 

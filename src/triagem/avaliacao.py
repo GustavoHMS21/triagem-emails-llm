@@ -18,6 +18,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TextIO
 
 from triagem.classificador import Classificador
 from triagem.config import config
@@ -55,27 +56,33 @@ CASOS_ESPECIAIS = {
 class ArquivoResultados:
     """Destino do pipeline (mesma interface do Repositorio) que grava em JSONL.
 
-        with ArquivoResultados(caminho) as destino:
-            processar(fonte, classificador, cadastro, destino)
+    with ArquivoResultados(caminho) as destino:
+        processar(fonte, classificador, cadastro, destino)
     """
 
     def __init__(self, caminho: Path):
         self.caminho = caminho
         self._feitos: set[str] = set()
-        self._arquivo = None
+        self._arquivo: TextIO | None = None
         self._ultimo = 0.0
 
     def __enter__(self) -> "ArquivoResultados":
         self.caminho.parent.mkdir(parents=True, exist_ok=True)
         if self.caminho.exists():
             linhas = self.caminho.read_text(encoding="utf-8").splitlines()
-            self._feitos = {json.loads(l)["id"] for l in linhas if l.strip()}
+            self._feitos = {json.loads(linha)["id"] for linha in linhas if linha.strip()}
         self._arquivo = open(self.caminho, "a", encoding="utf-8")
         self._ultimo = time.perf_counter()
         return self
 
-    def __exit__(self, *_) -> None:
-        self._arquivo.close()
+    def __exit__(self, *_: object) -> None:
+        self.arquivo.close()
+
+    @property
+    def arquivo(self) -> TextIO:
+        if self._arquivo is None:
+            raise RuntimeError("Use o ArquivoResultados dentro de um bloco `with`")
+        return self._arquivo
 
     def ja_triado(self, email_id: str) -> bool:
         return email_id in self._feitos
@@ -86,10 +93,11 @@ class ArquivoResultados:
         agora = time.perf_counter()
         segundos, self._ultimo = agora - self._ultimo, agora
 
+        email_id = t.email.original.id
         propaganda = t.prompt_versao == FILTRO_VERSAO
         c = t.classificacao
         registro = {
-            "id": t.email.original.id,
+            "id": email_id,
             "filtrado_como_propaganda": propaganda,
             "llm_falhou": c is None and not propaganda,
             "urgencia_llm": c.urgencia if c else None,
@@ -99,9 +107,9 @@ class ArquivoResultados:
             "motivos": t.motivos,
             "segundos": round(segundos, 1),
         }
-        self._arquivo.write(json.dumps(registro, ensure_ascii=False) + "\n")
-        self._arquivo.flush()  # gravado na hora: uma queda não perde o que já rodou
-        self._feitos.add(registro["id"])
+        self.arquivo.write(json.dumps(registro, ensure_ascii=False) + "\n")
+        self.arquivo.flush()  # gravado na hora: uma queda não perde o que já rodou
+        self._feitos.add(email_id)
         return True
 
 
@@ -156,10 +164,7 @@ def calcular_metricas(resultados: list[dict], gabarito: dict[str, dict]) -> Metr
     alarmes = [i for i in nao_urgentes if por_id[i]["nivel_final"] == "urgente"]
     alarmes_llm = [i for i in nao_urgentes if urgente_llm(por_id[i])]
 
-    categoria_certa = [
-        i for i in ids
-        if por_id[i]["categoria"] in gabarito[i]["categorias_aceitas"].split("|")
-    ]
+    categoria_certa = [i for i in ids if por_id[i]["categoria"] in gabarito[i]["categorias_aceitas"].split("|")]
 
     def razao(parte, todo):
         return len(parte) / len(todo) if todo else 0.0
@@ -185,7 +190,7 @@ def calcular_metricas(resultados: list[dict], gabarito: dict[str, dict]) -> Metr
 
 
 def carregar(resultados: Path = RESULTADOS, gabarito: Path = GABARITO) -> tuple[list[dict], dict[str, dict]]:
-    linhas = [json.loads(l) for l in resultados.read_text(encoding="utf-8").splitlines() if l.strip()]
+    linhas = [json.loads(linha) for linha in resultados.read_text(encoding="utf-8").splitlines() if linha.strip()]
     with open(gabarito, encoding="utf-8", newline="") as f:
         return linhas, {g["id"]: g for g in csv.DictReader(f)}
 
@@ -201,7 +206,10 @@ def relatorio() -> None:
     print(f"{'Recall de urgentes':28s}{m.recall_urgente_llm:>14.0%}{m.recall_urgente_sistema:>10.0%}")
     print(f"{'Alarmes falsos (urgente)':28s}{m.alarmes_falsos_llm:>14d}{m.alarmes_falsos_sistema:>10d}")
     print(f"\nAcerto de categoria: {m.acerto_categoria:.0%}")
-    print(f"Em revisão humana: {m.em_revisao}   Falhas do LLM: {m.falhas_llm}   Propaganda filtrada: {m.filtrados_propaganda}")
+    print(
+        f"Em revisão humana: {m.em_revisao}   Falhas do LLM: {m.falhas_llm}"
+        f"   Propaganda filtrada: {m.filtrados_propaganda}"
+    )
     if tempos:
         print(f"Tempo médio por e-mail classificado: {sum(tempos) / len(tempos):.0f}s")
 
@@ -212,7 +220,8 @@ def relatorio() -> None:
 
     def detalhe(i):
         r = por_id[i]
-        return f"  {i} esperado={gabarito[i]['nivel_esperado']:10s} sistema={r['nivel_final']:10s} llm={r['urgencia_llm']}\n      " + " | ".join(r["motivos"])
+        cabecalho = f"  {i} esperado={gabarito[i]['nivel_esperado']:10s} sistema={r['nivel_final']:10s}"
+        return f"{cabecalho} llm={r['urgencia_llm']}\n      " + " | ".join(r["motivos"])
 
     if m.urgentes_perdidos:
         print("\nURGENTES PERDIDOS:")
@@ -227,8 +236,10 @@ def relatorio() -> None:
     for i, descricao in CASOS_ESPECIAIS.items():
         if i in por_id:
             r = por_id[i]
-            print(f"  {i} ({descricao}): esperado={gabarito[i]['nivel_esperado']}, sistema={r['nivel_final']}"
-                  f"{' +revisão' if r['requer_revisao'] else ''}, categoria={r['categoria']}")
+            print(
+                f"  {i} ({descricao}): esperado={gabarito[i]['nivel_esperado']}, sistema={r['nivel_final']}"
+                f"{' +revisão' if r['requer_revisao'] else ''}, categoria={r['categoria']}"
+            )
 
 
 def main() -> None:

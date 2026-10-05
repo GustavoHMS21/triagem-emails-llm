@@ -62,9 +62,7 @@ def processar(
     # Fase 3: quem tem palavra-chave crítica passa primeiro pelo LLM
     for limpo in sorted(para_classificar, key=chave_da_fila):
         classificacao = classificador.classificar(limpo)
-        triagem = aplicar_regras(
-            limpo, classificacao, cadastro, classificador.llm.nome_modelo, PROMPT_VERSAO
-        )
+        triagem = aplicar_regras(limpo, classificacao, cadastro, classificador.llm.nome_modelo, PROMPT_VERSAO)
         resultados.append(_registrar(triagem, destino))
     return resultados
 
@@ -75,7 +73,10 @@ def _registrar(triagem: Triagem, destino: Destino | None) -> Triagem:
     # Log só com o id: assunto e remetente são dado pessoal e ficam no Gmail
     log.info(
         "%-12s %-10s revisão=%-5s categoria=%s",
-        triagem.email.original.id, triagem.nivel_final.name, triagem.requer_revisao, triagem.categoria,
+        triagem.email.original.id,
+        triagem.nivel_final.name,
+        triagem.requer_revisao,
+        triagem.categoria,
     )
     return triagem
 

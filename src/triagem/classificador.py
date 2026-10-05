@@ -17,9 +17,7 @@ from triagem.modelos import Classificacao, EmailLimpo
 log = logging.getLogger(__name__)
 
 PROMPT_VERSAO = "classificacao_v1"
-_PROMPT_SISTEMA = (Path(__file__).parent / "prompts" / f"{PROMPT_VERSAO}.md").read_text(
-    encoding="utf-8"
-)
+_PROMPT_SISTEMA = (Path(__file__).parent / "prompts" / f"{PROMPT_VERSAO}.md").read_text(encoding="utf-8")
 _SCHEMA = Classificacao.model_json_schema()
 
 
@@ -56,7 +54,10 @@ class Classificador:
                 resumo = _resumir_erros(erro)
                 log.warning(
                     "Resposta inválida para %s (tentativa %d/%d): %s",
-                    email.original.id, tentativa, self.tentativas, resumo,
+                    email.original.id,
+                    tentativa,
+                    self.tentativas,
+                    resumo,
                 )
                 mensagem = (
                     f"{montar_mensagem(email)}\n\n"
@@ -69,7 +70,10 @@ class Classificador:
                 # mudar o prompt não. Espera dobra a cada tentativa (backoff exponencial).
                 log.warning(
                     "LLM indisponível para %s (tentativa %d/%d): %s",
-                    email.original.id, tentativa, self.tentativas, erro,
+                    email.original.id,
+                    tentativa,
+                    self.tentativas,
+                    erro,
                 )
                 if tentativa < self.tentativas:
                     time.sleep(self.espera_s * 2 ** (tentativa - 1))

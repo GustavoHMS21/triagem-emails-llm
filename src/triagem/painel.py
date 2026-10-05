@@ -9,6 +9,7 @@ Uso:
 """
 
 from datetime import datetime
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -56,19 +57,21 @@ def filtros(fila: list[dict], cadastro: CadastroCondominios) -> list[dict]:
     with st.sidebar:
         st.header("Filtros")
         nomes = sorted({nome_condominio(t, cadastro) for t in fila} - {SEM_CONDOMINIO})
-        condominios = st.multiselect(
-            "Condomínio", nomes + [SEM_CONDOMINIO], placeholder="Todos os condomínios"
-        )
+        condominios = st.multiselect("Condomínio", nomes + [SEM_CONDOMINIO], placeholder="Todos os condomínios")
         # Nada selecionado = todos (em vez de uma tela vazia sem explicação)
         niveis = st.pills(
-            "Nível", [3, 2, 1], selection_mode="multi", default=[3, 2, 1],
+            "Nível",
+            [3, 2, 1],
+            selection_mode="multi",
+            default=[3, 2, 1],
             format_func=lambda n: NIVEIS[n][0],
         ) or [3, 2, 1]
         so_revisao = st.toggle("Só os que pedem revisão")
         esconder_propaganda = st.toggle("Esconder propaganda", value=True)
 
     return [
-        t for t in fila
+        t
+        for t in fila
         if (not condominios or nome_condominio(t, cadastro) in condominios)
         and t["nivel_final"] in niveis
         and (t["requer_revisao"] or not so_revisao)
@@ -134,7 +137,7 @@ def cartao(t: dict, cadastro: CadastroCondominios, repo: Repositorio, agora: dat
         gmail, acao = st.columns(2)
         gmail.link_button("Gmail", link_gmail(t["email_id"]), icon=":material/mail:", width="stretch")
         rotulo, proximo = PROXIMA_ACAO[t["status"]]
-        tipo = "secondary" if t["status"] == "concluido" else "primary"
+        tipo: Literal["primary", "secondary"] = "secondary" if t["status"] == "concluido" else "primary"
         if acao.button(rotulo, key=f"{proximo}-{t['id']}", type=tipo, width="stretch"):
             repo.atualizar_status(t["id"], proximo)
             st.rerun()
@@ -142,7 +145,7 @@ def cartao(t: dict, cadastro: CadastroCondominios, repo: Repositorio, agora: dat
 
 def quadro(fila: list[dict], cadastro: CadastroCondominios, repo: Repositorio, agora: datetime) -> None:
     colunas = st.columns(len(COLUNAS), gap="medium")
-    for status, coluna in zip(COLUNAS, colunas):
+    for status, coluna in zip(COLUNAS, colunas, strict=True):
         itens = [t for t in fila if t["status"] == status]
         if status == "concluido":
             itens = sorted(itens, key=lambda t: t["atualizado_em"], reverse=True)[:MAX_CONCLUIDOS]
@@ -165,7 +168,7 @@ def resumo_por_condominio(fila: list[dict], cadastro: CadastroCondominios) -> No
         st.info("Nenhum chamado aberto com os filtros atuais.")
         return
 
-    linhas = {}
+    linhas: dict[str, dict[str, int]] = {}
     for t in abertos:
         linha = linhas.setdefault(
             nome_condominio(t, cadastro),

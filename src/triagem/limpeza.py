@@ -11,9 +11,7 @@ from triagem.modelos import Email, EmailLimpo
 
 # Encaminhamento: o conteúdo ESTÁ abaixo da marca, então não se corta.
 # Só saem a marca e o bloco de cabeçalho logo depois dela.
-_MARCA_ENCAMINHAMENTO = re.compile(
-    r"^\s*-{2,}\s*(Mensagem encaminhada|Forwarded message)\s*-{2,}", re.IGNORECASE
-)
+_MARCA_ENCAMINHAMENTO = re.compile(r"^\s*-{2,}\s*(Mensagem encaminhada|Forwarded message)\s*-{2,}", re.IGNORECASE)
 _CABECALHO_ENCAMINHADO = re.compile(
     r"^\s*(De|From|Para|To|Cc|Data|Date|Assunto|Subject|Enviad[ao](\s+em)?|Sent)\s*:", re.IGNORECASE
 )
@@ -76,7 +74,7 @@ def limpar_corpo(corpo: str) -> str:
             break
 
     # 2. remove linhas citadas (">") e rodapé de celular
-    linhas = [l for l in linhas if not l.lstrip().startswith(">") and not _RODAPE_CELULAR.match(l)]
+    linhas = [linha for linha in linhas if not linha.lstrip().startswith(">") and not _RODAPE_CELULAR.match(linha)]
 
     # 3. corta no separador padrão de assinatura "-- "
     for i, linha in enumerate(linhas):
@@ -91,7 +89,7 @@ def limpar_corpo(corpo: str) -> str:
             linhas = linhas[:i]
             break
 
-    texto = "\n".join(l.rstrip() for l in linhas)
+    texto = "\n".join(linha.rstrip() for linha in linhas)
     return re.sub(r"\n{3,}", "\n\n", texto).strip()
 
 

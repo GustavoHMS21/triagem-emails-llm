@@ -17,6 +17,7 @@ Cada regra que mexe no resultado deixa um motivo, que aparece no painel.
 import csv
 import re
 import unicodedata
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -43,7 +44,7 @@ class Gestor:
 
 
 class CadastroCondominios:
-    def __init__(self, condominios: list[Condominio], gestores: list[Gestor] = ()):
+    def __init__(self, condominios: Sequence[Condominio], gestores: Sequence[Gestor] = ()):
         self._por_id = {c.id: c for c in condominios}
         self._gestor_por_email = {g.email.lower(): g for g in gestores}
 
@@ -140,9 +141,11 @@ def aplicar_regras(
     revisao = False
 
     gestor = cadastro.por_gestor(email.original.remetente)
-    condominio = gestor.condominio if gestor else cadastro.por_nome(
-        classificacao and classificacao.condominio_mencionado
-    )
+    condominio: Condominio | None
+    if gestor:
+        condominio = gestor.condominio
+    else:
+        condominio = cadastro.por_nome(classificacao.condominio_mencionado if classificacao else None)
 
     # 1. Falha do LLM
     if classificacao is None:

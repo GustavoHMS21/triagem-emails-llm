@@ -37,7 +37,7 @@ def rotulo_categoria(categoria: str | None) -> str:
 
 
 def tempo_de_espera(desde: datetime, agora: datetime) -> str:
-    """"há 4h 12min": quanto tempo o chamado está esperando.
+    """Quanto tempo o chamado está esperando, ex.: "há 4h 12min".
 
     `agora` vem de fora (e não de datetime.now()) para a função ser testável.
     """

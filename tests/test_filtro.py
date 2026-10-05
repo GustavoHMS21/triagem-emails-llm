@@ -12,8 +12,12 @@ DESCADASTRO = {"List-Unsubscribe": "<mailto:sair@loja.com>"}
 
 def email(id="e1", assunto="assunto", corpo="texto do morador", hora=9, cabecalhos=None):
     return Email(
-        id=id, remetente="morador@gmail.com", assunto=assunto, corpo=corpo,
-        recebido_em=datetime(2026, 10, 1, hora, 0), cabecalhos=cabecalhos or {},
+        id=id,
+        remetente="morador@gmail.com",
+        assunto=assunto,
+        corpo=corpo,
+        recebido_em=datetime(2026, 10, 1, hora, 0),
+        cabecalhos=cabecalhos or {},
     )
 
 
@@ -93,11 +97,13 @@ class FonteLista:
 
 def test_pipeline_pula_propaganda_e_classifica_urgente_primeiro():
     llm = LLMFalso()
-    fonte = FonteLista([
-        email(id="boleto", assunto="boleto", corpo="segunda via do boleto", hora=8),
-        email(id="loja", assunto="Aproveite a promoção", cabecalhos=DESCADASTRO, hora=9),
-        email(id="gas", assunto="cheiro estranho", corpo="cheiro de gás no hall", hora=11),
-    ])
+    fonte = FonteLista(
+        [
+            email(id="boleto", assunto="boleto", corpo="segunda via do boleto", hora=8),
+            email(id="loja", assunto="Aproveite a promoção", cabecalhos=DESCADASTRO, hora=9),
+            email(id="gas", assunto="cheiro estranho", corpo="cheiro de gás no hall", hora=11),
+        ]
+    )
 
     resultados = processar(fonte, Classificador(llm, 1), CadastroCondominios([]), destino=None)
 

@@ -1,5 +1,7 @@
 # Triagem de e-mails: Alvorada Gestão Condominial
 
+[![CI](https://github.com/GustavoHMS21/triagem-emails-llm/actions/workflows/ci.yml/badge.svg)](https://github.com/GustavoHMS21/triagem-emails-llm/actions/workflows/ci.yml)
+
 Classifica os e-mails da caixa de atendimento por setor e urgência e monta uma fila ordenada por prioridade, para que vazamento, gás e elevador parado não esperem atrás de pedidos de segunda via.
 
 Os dados em `data/` são fictícios.
@@ -32,6 +34,19 @@ uv run python -m triagem.pipeline data/emails/ --sem-banco   # só imprime
 uv run python -m triagem.pipeline data/emails/               # grava no banco
 uv run streamlit run src/triagem/painel.py                   # fila (http://127.0.0.1:8501)
 ```
+
+## Desenvolvimento
+
+```bash
+uv run ruff check           # lint
+uv run ruff format          # formatação
+uv run mypy                 # tipos
+uv run pytest               # testes (sem Ollama nem Postgres: o LLM é simulado)
+uv run python -m triagem.avaliacao rodar      # avaliação na amostra (usa o Ollama)
+uv run python -m triagem.avaliacao relatorio  # métricas contra o gabarito
+```
+
+O CI (GitHub Actions) roda lint, formatação, tipos e testes a cada push.
 
 ## Estrutura
 

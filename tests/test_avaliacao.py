@@ -6,8 +6,14 @@ from triagem.classificador import Classificador
 
 def resultado(id, nivel_final, urgencia_llm, categoria="manutencao", revisao=False):
     return {
-        "id": id, "nivel_final": nivel_final, "urgencia_llm": urgencia_llm, "categoria": categoria,
-        "requer_revisao": revisao, "llm_falhou": False, "filtrado_como_propaganda": False, "motivos": [],
+        "id": id,
+        "nivel_final": nivel_final,
+        "urgencia_llm": urgencia_llm,
+        "categoria": categoria,
+        "requer_revisao": revisao,
+        "llm_falhou": False,
+        "filtrado_como_propaganda": False,
+        "motivos": [],
     }
 
 
@@ -41,7 +47,10 @@ def test_alarme_falso_e_urgente_perdido_sao_listados():
 
 
 def test_categoria_aceita_qualquer_uma_das_listadas():
-    resultados = [resultado("A", "normal", "normal", categoria="outros"), resultado("B", "normal", "normal", categoria="lixo")]
+    resultados = [
+        resultado("A", "normal", "normal", categoria="outros"),
+        resultado("B", "normal", "normal", categoria="lixo"),
+    ]
     m = calcular_metricas(resultados, gabarito(A="normal", B="normal"))
     assert m.acerto_categoria == 0.5
 
@@ -73,12 +82,27 @@ class LLMQueAnota:
 
 def _amostra(pasta):
     emails = [
-        {"id": "boleto", "remetente": "a@b.com", "assunto": "boleto", "corpo": "segunda via do boleto",
-         "recebido_em": "2026-10-01T08:00:00-03:00"},
-        {"id": "loja", "remetente": "loja@x.com", "assunto": "Aproveite a promoção",
-         "corpo": "Para não receber mais nossos e-mails, clique aqui.", "recebido_em": "2026-10-01T09:00:00-03:00"},
-        {"id": "gas", "remetente": "c@d.com", "assunto": "cheiro estranho", "corpo": "cheiro de gás no hall",
-         "recebido_em": "2026-10-01T11:00:00-03:00"},
+        {
+            "id": "boleto",
+            "remetente": "a@b.com",
+            "assunto": "boleto",
+            "corpo": "segunda via do boleto",
+            "recebido_em": "2026-10-01T08:00:00-03:00",
+        },
+        {
+            "id": "loja",
+            "remetente": "loja@x.com",
+            "assunto": "Aproveite a promoção",
+            "corpo": "Para não receber mais nossos e-mails, clique aqui.",
+            "recebido_em": "2026-10-01T09:00:00-03:00",
+        },
+        {
+            "id": "gas",
+            "remetente": "c@d.com",
+            "assunto": "cheiro estranho",
+            "corpo": "cheiro de gás no hall",
+            "recebido_em": "2026-10-01T11:00:00-03:00",
+        },
     ]
     caminho = pasta / "amostra.json"
     caminho.write_text(json.dumps(emails), encoding="utf-8")

@@ -80,7 +80,10 @@ def triagem_de_propaganda(email: EmailLimpo, motivo: str) -> Triagem:
 
 PALAVRAS_SO_FILA: dict[str, Nivel] = {
     # Água em movimento: "ta descendo agua", "a agua da escada entrou" (E019, E020)
-    r"[aá]gua.{0,30}(descend|cain|sain|entr|escorr)|(descend|cain|sain|entr|escorr)\w*\s+[aá]gua|molhando|molhou": Nivel.URGENTE,
+    (
+        r"[aá]gua.{0,30}(descend|cain|sain|entr|escorr)"
+        r"|(descend|cain|sain|entr|escorr)\w*\s+[aá]gua|molhando|molhou"
+    ): Nivel.URGENTE,
     # Risco elétrico: "fio solto... pode dar choque?" (E073)
     r"fio solto|choque": Nivel.URGENTE,
     r"elevador": Nivel.IMPORTANTE,
