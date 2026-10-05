@@ -11,11 +11,14 @@ EXIGIR_BANCO=1 (no CI), falham: um CI sem banco não pode ficar verde.
 import os
 import uuid
 from collections.abc import Iterator
+from pathlib import Path
 
 import psycopg
 import pytest
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
+
+from triagem.migrar import listar, migrar
 
 SERVIDOR = os.environ.get("TESTE_DATABASE_URL", "postgresql://triagem:triagem@127.0.0.1:5433/postgres")
 
@@ -37,3 +40,11 @@ def banco_vazio() -> Iterator[str]:
     finally:
         admin.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(nome)))
         admin.close()
+
+
+@pytest.fixture
+def banco_migrado(banco_vazio: str) -> str:
+    """Banco descartável com o schema real, criado pelas migrações de db/ (como em produção)."""
+    with psycopg.connect(banco_vazio, autocommit=True) as conn:
+        migrar(conn, listar(Path("db")))
+    return banco_vazio
