@@ -20,6 +20,7 @@ class Config(BaseSettings):
     llm_tentativas: int = 2
 
     database_url: str = "postgresql://triagem:triagem@127.0.0.1:5433/triagem"
+    migracoes_dir: Path = Path("db")
 
     condominios_csv: Path = Path("data/condominios.csv")
     gestores_csv: Path = Path("data/gestores.csv")

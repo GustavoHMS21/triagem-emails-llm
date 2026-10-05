@@ -11,8 +11,8 @@ services:
       - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # Scripts em db/ rodam na primeira subida (banco vazio), em ordem alfabética
-      - ./db:/docker-entrypoint-initdb.d:ro
+    # O schema é criado pelo executor de migrações (python -m triagem.migrar),
+    # que registra o que já rodou; o Docker só sobe o servidor.
 
 volumes:
   pgdata:

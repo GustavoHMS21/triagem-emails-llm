@@ -27,7 +27,8 @@ Pré-requisitos: [uv](https://docs.astral.sh/uv/), Docker e [Ollama](https://oll
 cp .env.example .env
 uv sync
 ollama pull qwen3:8b
-docker compose up -d                                         # Postgres + tabela (porta 5433)
+docker compose up -d                                         # Postgres (porta 5433)
+uv run python -m triagem.migrar                              # cria/atualiza o schema
 
 uv run pytest
 uv run python -m triagem.pipeline data/emails/ --sem-banco   # só imprime
@@ -41,12 +42,14 @@ uv run streamlit run src/triagem/painel.py                   # fila (http://127.
 uv run ruff check           # lint
 uv run ruff format          # formatação
 uv run mypy                 # tipos
-uv run pytest               # testes (sem Ollama nem Postgres: o LLM é simulado)
+uv run pytest               # testes (LLM simulado; integração usa o Postgres do docker-compose)
 uv run python -m triagem.avaliacao rodar      # avaliação na amostra (usa o Ollama)
 uv run python -m triagem.avaliacao relatorio  # métricas contra o gabarito
 ```
 
-O CI (GitHub Actions) roda lint, formatação, tipos e testes a cada push.
+O CI (GitHub Actions) roda lint, formatação, tipos e testes a cada push, com um Postgres de verdade para os testes de integração.
+
+Migrações: crie um arquivo novo em `db/` (`004_...sql`); nunca edite uma que já foi aplicada (o executor recusa). Banco criado antes do executor: rode `python -m triagem.migrar --baseline` uma vez.
 
 ## Estrutura
 
@@ -65,6 +68,8 @@ O CI (GitHub Actions) roda lint, formatação, tipos e testes a cada push.
 | `src/triagem/repositorio.py` | Persistência no PostgreSQL |
 | `src/triagem/fila.py` | Lógica da fila: filtros, indicadores, colunas e resumo por condomínio |
 | `src/triagem/painel.py` | Painel da fila (Streamlit): só a interface |
+| `src/triagem/migrar.py` | Executor de migrações (aplica as pendentes, registra e valida checksum) |
+| `db/` | Migrações SQL versionadas |
 | `data/condominios.csv` | Condomínios e nº de elevadores (vazio = não informado) |
 | `data/gestores.csv` | Síndicos e subsíndicos: um e-mail por linha |
 | `data/amostras/` | Amostra de e-mails e gabarito para avaliação |

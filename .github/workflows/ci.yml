@@ -8,6 +8,24 @@ on:
 jobs:
   qualidade:
     runs-on: ubuntu-latest
+
+    # Postgres de verdade para os testes de integração (migrações): mesmas
+    # credenciais e porta do docker-compose local
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: triagem
+          POSTGRES_PASSWORD: triagem
+          POSTGRES_DB: triagem
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U triagem"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +48,10 @@ jobs:
       - name: Tipos
         run: uv run mypy
 
-      # Os testes usam um LLM falso e não dependem do banco: sem Ollama nem Postgres no CI
+      # LLM falso (sem Ollama); Postgres do service acima para os testes de integração.
+      # EXIGIR_BANCO=1: sem banco, os testes de integração falham em vez de serem pulados
       - name: Testes
         run: uv run pytest
+        env:
+          EXIGIR_BANCO: "1"
+          TESTE_DATABASE_URL: postgresql://triagem:triagem@127.0.0.1:5433/postgres
