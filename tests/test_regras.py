@@ -1,10 +1,10 @@
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
 from triagem.cadastro import CadastroCondominios, Condominio, Gestor
 from triagem.cadastro_csv import carregar_cadastro
-from triagem.config import config
 from triagem.limpeza import limpar
 from triagem.modelos import Anexo, Classificacao, Email, Nivel
 from triagem.regras import aplicar_regras
@@ -166,7 +166,8 @@ def test_nome_de_condominio_generico_nao_casa_com_o_primeiro_da_lista():
 
 
 def test_cadastro_real_carrega_e_todo_gestor_aponta_para_condominio_existente():
-    cadastro = carregar_cadastro(config.condominios_csv, config.gestores_csv)
+    # Caminhos explícitos: o teste é sobre os CSVs do repositório, não sobre o .env de quem roda
+    cadastro = carregar_cadastro(Path("data/condominios.csv"), Path("data/gestores.csv"))
     emails = ("roberto@nogueiratransportes.com.br", "roberto.nogueira.sindico@gmail.com")
     roberto = [cadastro.por_gestor(e) for e in emails]
     assert all(g and g.condominio.id == "C01" for g in roberto)

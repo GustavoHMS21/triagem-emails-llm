@@ -19,7 +19,7 @@ import streamlit as st
 
 from triagem.cadastro import CadastroCondominios
 from triagem.cadastro_csv import carregar_cadastro
-from triagem.config import config
+from triagem.config import carregar_config
 from triagem.fila import (
     COLUNAS,
     MAX_CONCLUIDOS,
@@ -150,6 +150,7 @@ st.markdown(_CSS, unsafe_allow_html=True)
 
 # O Streamlit roda este script de novo a cada clique: uma conexão por atualização da tela,
 # fechada pelo `with` mesmo quando st.rerun() interrompe a execução
+config = carregar_config()
 with Repositorio(config.database_url) as repo:
     cadastro = carregar_cadastro(config.condominios_csv, config.gestores_csv)
     agora = datetime.now(FUSO)

@@ -1,3 +1,11 @@
+"""Configuração por ambiente (variáveis de ambiente e arquivo .env).
+
+Carregada sob demanda com carregar_config(), e não no import: importar um
+módulo do projeto não lê arquivo nenhum, e um teste pode criar um Config
+com os valores que quiser.
+"""
+
+from functools import cache
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,4 +25,7 @@ class Config(BaseSettings):
     gestores_csv: Path = Path("data/gestores.csv")
 
 
-config = Config()
+@cache
+def carregar_config() -> Config:
+    """Lê o ambiente na primeira chamada e reaproveita nas seguintes."""
+    return Config()

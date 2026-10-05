@@ -22,7 +22,7 @@ from typing import TextIO
 
 from triagem.cadastro_csv import carregar_cadastro
 from triagem.classificador import Classificador
-from triagem.config import config
+from triagem.config import carregar_config
 from triagem.entrada import FonteJson
 from triagem.filtro import FILTRO_VERSAO
 from triagem.llm import ClienteOllama
@@ -115,6 +115,7 @@ class ArquivoResultados:
 
 def rodar(amostra: Path = AMOSTRA, saida: Path = RESULTADOS, classificador: Classificador | None = None) -> None:
     """Roda o pipeline de produção sobre a amostra, gravando no arquivo de resultados."""
+    config = carregar_config()
     if classificador is None:
         llm = ClienteOllama(config.ollama_url, config.ollama_modelo, config.llm_timeout_s)
         classificador = Classificador(llm, config.llm_tentativas)

@@ -7,6 +7,7 @@ de negócio mandam o e-mail para revisão humana. O pipeline nunca para por caus
 
 import logging
 import time
+from functools import cache
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -17,8 +18,13 @@ from triagem.modelos import Classificacao, EmailLimpo
 log = logging.getLogger(__name__)
 
 PROMPT_VERSAO = "classificacao_v1"
-_PROMPT_SISTEMA = (Path(__file__).parent / "prompts" / f"{PROMPT_VERSAO}.md").read_text(encoding="utf-8")
-_SCHEMA = Classificacao.model_json_schema()
+_SCHEMA = Classificacao.model_json_schema()  # cálculo puro, sem I/O: pode ficar no import
+
+
+@cache
+def carregar_prompt(versao: str = PROMPT_VERSAO) -> str:
+    """Lê o prompt versionado na primeira chamada (e não no import do módulo)."""
+    return (Path(__file__).parent / "prompts" / f"{versao}.md").read_text(encoding="utf-8")
 
 
 def montar_mensagem(email: EmailLimpo) -> str:
@@ -36,16 +42,17 @@ def _resumir_erros(erro: ValidationError) -> str:
 
 
 class Classificador:
-    def __init__(self, llm: ClienteLLM, tentativas: int = 2, espera_s: float = 2.0):
+    def __init__(self, llm: ClienteLLM, tentativas: int = 2, espera_s: float = 2.0, prompt: str | None = None):
         self.llm = llm
         self.tentativas = tentativas
         self.espera_s = espera_s
+        self.prompt = prompt if prompt is not None else carregar_prompt()
 
     def classificar(self, email: EmailLimpo) -> Classificacao | None:
         mensagem = montar_mensagem(email)
         for tentativa in range(1, self.tentativas + 1):
             try:
-                bruto = self.llm.gerar_json(_PROMPT_SISTEMA, mensagem, _SCHEMA)
+                bruto = self.llm.gerar_json(self.prompt, mensagem, _SCHEMA)
                 return Classificacao.model_validate_json(bruto)
 
             except ValidationError as erro:

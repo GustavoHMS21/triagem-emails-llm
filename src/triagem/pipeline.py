@@ -14,7 +14,7 @@ from typing import Protocol
 from triagem.cadastro import CadastroCondominios
 from triagem.cadastro_csv import carregar_cadastro
 from triagem.classificador import PROMPT_VERSAO, Classificador
-from triagem.config import config
+from triagem.config import carregar_config
 from triagem.entrada import FonteEmails, FonteJson
 from triagem.filtro import chave_da_fila, motivo_propaganda, triagem_de_propaganda
 from triagem.limpeza import limpar
@@ -90,6 +90,7 @@ def main() -> None:
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    config = carregar_config()
 
     llm = ClienteOllama(config.ollama_url, config.ollama_modelo, config.llm_timeout_s)
     banco = nullcontext() if args.sem_banco else Repositorio(config.database_url)
