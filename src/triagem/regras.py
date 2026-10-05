@@ -148,11 +148,12 @@ def aplicar_regras(
     if classificacao is None:
         nivel = Nivel.NORMAL
         revisao = True
-        motivos.append("LLM não devolveu classificação válida")
+        motivos.append("Classificação automática falhou: conferir no Gmail")
     else:
+        # Motivos explicam regras de negócio para a atendente. O nível dado pelo
+        # modelo não vira motivo (já fica em urgencia_llm), e o "motivo" textual do
+        # LLM não é gravado: repete fatos do e-mail (dado pessoal)
         nivel = Nivel.de_texto(classificacao.urgencia)
-        # Só o nível: o "motivo" do LLM repete fatos do e-mail (dado pessoal) e não é gravado
-        motivos.append(f"LLM: {classificacao.urgencia}")
 
         # 2. Dúvida entre dois níveis: fica no mais alto, mas uma pessoa confere
         if classificacao.em_duvida:
@@ -161,8 +162,8 @@ def aplicar_regras(
                 alternativa = Nivel.de_texto(classificacao.urgencia_alternativa)
                 if alternativa > nivel:
                     nivel = alternativa
-                    motivos.append(f"Dúvida do LLM: subiu para {alternativa.name.lower()}")
-            motivos.append("LLM em dúvida entre dois níveis")
+                    motivos.append(f"Classificação em dúvida: subiu para {alternativa.name.lower()}")
+            motivos.append("Classificação em dúvida entre dois níveis")
 
         # 3. Elevador: o LLM não sabe quantos elevadores o prédio tem; o cadastro sabe
         if classificacao.elevador_parado and nivel < Nivel.URGENTE:
@@ -192,15 +193,14 @@ def aplicar_regras(
     # 5. Conteúdo só no anexo
     if email.corpo_vazio and email.original.anexos:
         revisao = True
-        motivos.append("Corpo vazio com anexo: conteúdo não lido na v1")
+        motivos.append("Conteúdo só no anexo: abrir no Gmail")
 
     # 6. Síndico ou subsíndico sobe um nível (prioridade de negócio, aplicada por último)
     if gestor:
         novo = nivel.subir()
         if novo > nivel:
-            motivos.append(
-                f"Remetente é {gestor.papel} de {gestor.condominio.nome}: subiu para {novo.name.lower()}"
-            )
+            papel = {"sindico": "síndico", "subsindico": "subsíndico"}.get(gestor.papel, gestor.papel)
+            motivos.append(f"Remetente é {papel} de {gestor.condominio.nome}: subiu para {novo.name.lower()}")
         nivel = novo
 
     return Triagem(

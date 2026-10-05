@@ -138,7 +138,7 @@ def test_subsindico_sobe_um_nivel_e_o_motivo_diz_o_papel():
     t = triar(email(remetente="renata@gmail.com"), classif(urgencia="importante"))
     assert t.nivel_final == Nivel.URGENTE
     assert t.remetente_sindico
-    assert any("subsindico de Condomínio Jardim das Acácias" in m for m in t.motivos)
+    assert any("subsíndico de Condomínio Jardim das Acácias" in m for m in t.motivos)
 
 
 def test_elevador_parado_com_qtd_desconhecida_vira_urgente_com_revisao():
@@ -183,3 +183,25 @@ def test_portao_que_nao_fecha_e_urgente_mesmo_se_o_llm_subestimar():
     t = triar(email("O portão da entrada de pedestres não fecha sozinho"), classif(urgencia="normal"))
     assert t.nivel_final == Nivel.URGENTE
     assert t.requer_revisao
+
+
+@pytest.mark.parametrize(
+    "caso",
+    ["normal", "duvida", "falha", "anexo"],
+)
+def test_motivos_nao_citam_o_llm(caso):
+    # Motivos são para a atendente: explicam regras de negócio, não a tecnologia
+    if caso == "falha":
+        t = triar(email(), None)
+    elif caso == "duvida":
+        t = triar(email(), classif(urgencia="importante", em_duvida=True, urgencia_alternativa="urgente"))
+    elif caso == "anexo":
+        t = triar(email("segue anexo", anexos=[Anexo(nome="foto.jpg")]), classif())
+    else:
+        t = triar(email(), classif(urgencia="urgente"))
+    assert not any("LLM" in m for m in t.motivos)
+
+
+def test_sem_regra_acionada_nao_ha_motivo():
+    t = triar(email(), classif(urgencia="urgente"))
+    assert t.motivos == []

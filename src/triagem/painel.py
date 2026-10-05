@@ -126,9 +126,10 @@ def cartao(t: dict, cadastro: CadastroCondominios, repo: Repositorio, agora: dat
         anexo = " · 📎 anexo" if t["tem_anexo"] else ""
         st.caption(f"{rotulo_categoria(t['categoria'])} · {quando}{anexo}")
 
-        with st.expander("Por que este nível?"):
-            for motivo in t["motivos"]:
-                st.markdown(f"- {escapar_markdown(motivo)}")
+        if t["motivos"]:  # só quando alguma regra de negócio mexeu no nível
+            with st.expander("Por que este nível?"):
+                for motivo in t["motivos"]:
+                    st.markdown(f"- {escapar_markdown(motivo)}")
 
         gmail, acao = st.columns(2)
         gmail.link_button("Gmail", link_gmail(t["email_id"]), icon=":material/mail:", width="stretch")
