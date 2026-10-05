@@ -10,6 +10,8 @@ import re
 from datetime import datetime
 from urllib.parse import quote
 
+from triagem.modelos import Status
+
 ROTULOS_CATEGORIA = {
     "financeiro": "Financeiro",
     "manutencao": "Manutenção",
@@ -20,7 +22,11 @@ ROTULOS_CATEGORIA = {
     "lixo": "Propaganda",
     "outros": "Outros",
 }
-ROTULOS_STATUS = {"pendente": "Pendente", "em_atendimento": "Em atendimento", "concluido": "Concluído"}
+ROTULOS_STATUS = {
+    Status.PENDENTE: "Pendente",
+    Status.EM_ATENDIMENTO: "Em atendimento",
+    Status.CONCLUIDO: "Concluído",
+}
 
 # Tudo que o markdown do Streamlit interpreta, incluindo ":" e "." (links
 # automáticos de http://... e www....) e "$" (fórmulas LaTeX)

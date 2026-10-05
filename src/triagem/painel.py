@@ -34,6 +34,7 @@ from triagem.fila import (
     resumo_por_condominio,
 )
 from triagem.formatacao import ROTULOS_STATUS, escapar_markdown, link_gmail, rotulo_categoria, tempo_de_espera
+from triagem.modelos import Status
 from triagem.repositorio import Repositorio
 
 FUSO = ZoneInfo("America/Sao_Paulo")  # o banco guarda em UTC; a atendente lê no horário local
@@ -98,7 +99,7 @@ def cartao(t: Chamado, cadastro: CadastroCondominios, repo: Repositorio, agora: 
         st.markdown(" ".join(selos))
 
         st.markdown(f"**{escapar_markdown(nome_condominio(t, cadastro))}**")
-        if t["status"] == "concluido":
+        if t["status"] == Status.CONCLUIDO:
             quando = f"concluído {tempo_de_espera(t['atualizado_em'], agora)}"
         else:
             quando = f"aguardando {tempo_de_espera(t['recebido_em'], agora)}"
@@ -113,7 +114,7 @@ def cartao(t: Chamado, cadastro: CadastroCondominios, repo: Repositorio, agora: 
         gmail, acao = st.columns(2)
         gmail.link_button("Gmail", link_gmail(t["email_id"]), icon=":material/mail:", width="stretch")
         rotulo, proximo = PROXIMA_ACAO[t["status"]]
-        tipo: Literal["primary", "secondary"] = "secondary" if t["status"] == "concluido" else "primary"
+        tipo: Literal["primary", "secondary"] = "secondary" if t["status"] == Status.CONCLUIDO else "primary"
         if acao.button(rotulo, key=f"{proximo}-{t['id']}", type=tipo, width="stretch"):
             repo.atualizar_status(t["id"], proximo)
             st.rerun()
@@ -125,7 +126,7 @@ def quadro(fila: list[Chamado], cadastro: CadastroCondominios, repo: Repositorio
         itens = itens_da_coluna(fila, status)
         with coluna:
             st.subheader(f"{ROTULOS_STATUS[status]} · {len(itens)}")
-            if status == "concluido" and itens:
+            if status == Status.CONCLUIDO and itens:
                 st.caption(f"Últimos {MAX_CONCLUIDOS}")
             if not itens:
                 st.caption("Nenhum chamado aqui.")

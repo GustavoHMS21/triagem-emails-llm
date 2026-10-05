@@ -7,7 +7,7 @@ Triagem         -> resultado final depois das regras de negócio (etapa 3)
 """
 
 from datetime import datetime
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -26,6 +26,15 @@ class Nivel(IntEnum):
 
     def subir(self) -> "Nivel":
         return Nivel(min(self + 1, Nivel.URGENTE))
+
+
+class Status(StrEnum):
+    """Andamento do chamado na fila. StrEnum: os valores são o próprio texto
+    gravado no banco (ver o CHECK em db/001_init.sql)."""
+
+    PENDENTE = "pendente"
+    EM_ATENDIMENTO = "em_atendimento"
+    CONCLUIDO = "concluido"
 
 
 Categoria = Literal[

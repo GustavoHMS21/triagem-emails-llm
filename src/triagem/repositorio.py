@@ -8,7 +8,7 @@ fica só no Gmail. Aqui vai apenas o necessário para ordenar a fila; email_id
 import psycopg
 from psycopg.rows import DictRow, dict_row
 
-from triagem.modelos import Triagem
+from triagem.modelos import Status, Triagem
 
 _INSERIR = """
 INSERT INTO triagens (
@@ -85,11 +85,17 @@ class Repositorio:
         }
         return self.conn.execute(_INSERIR, params).rowcount == 1
 
-    def fila(self, status: list[str] | None = None) -> list[DictRow]:
-        return self.conn.execute(_FILA, {"status": status or ["pendente", "em_atendimento"]}).fetchall()
+    def fila(self, status: list[Status] | None = None) -> list[DictRow]:
+        filtro = [s.value for s in status or [Status.PENDENTE, Status.EM_ATENDIMENTO]]
+        linhas = self.conn.execute(_FILA, {"status": filtro}).fetchall()
+        for linha in linhas:
+            # Valida na fronteira: valor fora do Status estoura aqui, com mensagem
+            # clara, em vez de o chamado sumir das colunas do painel em silêncio
+            linha["status"] = Status(linha["status"])
+        return linhas
 
-    def atualizar_status(self, triagem_id: int, status: str) -> None:
+    def atualizar_status(self, triagem_id: int, status: Status) -> None:
         self.conn.execute(
             "UPDATE triagens SET status = %s, atualizado_em = now() WHERE id = %s",
-            (status, triagem_id),
+            (status.value, triagem_id),
         )

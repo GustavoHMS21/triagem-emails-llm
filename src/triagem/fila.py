@@ -10,19 +10,20 @@ from datetime import datetime
 from typing import Any
 
 from triagem.cadastro import CadastroCondominios
+from triagem.modelos import Status
 
 Chamado = dict[str, Any]  # uma linha da tabela triagens
 
 SEM_CONDOMINIO = "Não identificado"
 MAX_CONCLUIDOS = 10
-COLUNAS = ["pendente", "em_atendimento", "concluido"]
+COLUNAS = [Status.PENDENTE, Status.EM_ATENDIMENTO, Status.CONCLUIDO]
 
 # status -> (ação, próximo status): uma ação principal por chamado.
 # "Reabrir" desfaz um clique errado em "Concluir".
-PROXIMA_ACAO = {
-    "pendente": ("Assumir", "em_atendimento"),
-    "em_atendimento": ("Concluir", "concluido"),
-    "concluido": ("Reabrir", "pendente"),
+PROXIMA_ACAO: dict[Status, tuple[str, Status]] = {
+    Status.PENDENTE: ("Assumir", Status.EM_ATENDIMENTO),
+    Status.EM_ATENDIMENTO: ("Concluir", Status.CONCLUIDO),
+    Status.CONCLUIDO: ("Reabrir", Status.PENDENTE),
 }
 
 
@@ -77,8 +78,8 @@ def calcular_indicadores(fila: list[Chamado]) -> Indicadores:
     O "urgente mais antigo" considera só os pendentes: um urgente já assumido
     tem alguém cuidando e não está mais esperando.
     """
-    abertos = [t for t in fila if t["status"] != "concluido"]
-    urgentes_pendentes = [t for t in abertos if t["nivel_final"] == 3 and t["status"] == "pendente"]
+    abertos = [t for t in fila if t["status"] != Status.CONCLUIDO]
+    urgentes_pendentes = [t for t in abertos if t["nivel_final"] == 3 and t["status"] == Status.PENDENTE]
     return Indicadores(
         urgentes_abertos=sum(t["nivel_final"] == 3 for t in abertos),
         importantes_abertos=sum(t["nivel_final"] == 2 for t in abertos),
@@ -90,14 +91,14 @@ def calcular_indicadores(fila: list[Chamado]) -> Indicadores:
 # --- Quadro ----------------------------------------------------------------------
 
 
-def itens_da_coluna(fila: list[Chamado], status: str) -> list[Chamado]:
+def itens_da_coluna(fila: list[Chamado], status: Status) -> list[Chamado]:
     """Chamados de uma coluna do quadro.
 
     Pendente e em atendimento mantêm a ordem de prioridade da fila. Concluído
     mostra só os mais recentes, para a coluna não crescer para sempre.
     """
     itens = [t for t in fila if t["status"] == status]
-    if status == "concluido":
+    if status == Status.CONCLUIDO:
         itens = sorted(itens, key=lambda t: t["atualizado_em"], reverse=True)[:MAX_CONCLUIDOS]
     return itens
 
@@ -111,7 +112,7 @@ def resumo_por_condominio(fila: list[Chamado], cadastro: CadastroCondominios) ->
     """Chamados abertos por condomínio e nível, mais urgentes primeiro."""
     linhas: dict[str, dict[str, Any]] = {}
     for t in fila:
-        if t["status"] == "concluido":
+        if t["status"] == Status.CONCLUIDO:
             continue
         nome = nome_condominio(t, cadastro)
         linha = linhas.setdefault(
