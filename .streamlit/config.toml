@@ -9,6 +9,18 @@ headless = true
 enableXsrfProtection = true
 enableCORS = true
 
+[theme]
+# Fundo cinza claro com cartões brancos; azul só para ações. Vermelho e laranja
+# ficam reservados para o nível de urgência. Contraste do texto acima de 4,5:1.
+base = "light"
+primaryColor = "#1D4ED8"
+backgroundColor = "#F5F7FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1F2937"
+borderColor = "#E5E7EB"
+baseRadius = "medium"
+font = "sans serif"
+
 [browser]
 # Não envia estatísticas de uso para os servidores do Streamlit
 gatherUsageStats = false
