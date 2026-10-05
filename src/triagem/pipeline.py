@@ -9,6 +9,7 @@ import argparse
 import logging
 from contextlib import nullcontext
 from pathlib import Path
+from typing import Protocol
 
 from triagem.classificador import PROMPT_VERSAO, Classificador
 from triagem.config import config
@@ -23,27 +24,38 @@ from triagem.repositorio import Repositorio
 log = logging.getLogger("triagem")
 
 
+class Destino(Protocol):
+    """Para onde vão os resultados. O banco (Repositorio) é um destino; o arquivo
+    da avaliação é outro. Assim a avaliação mede exatamente este pipeline."""
+
+    def ja_triado(self, email_id: str) -> bool: ...
+
+    def salvar(self, triagem: Triagem) -> bool: ...
+
+
 def processar(
     fonte: FonteEmails,
     classificador: Classificador,
     cadastro: CadastroCondominios,
-    repositorio: Repositorio | None,
+    destino: Destino | None,
 ) -> list[Triagem]:
     # Fase 1: ler todos, pular os já triados e limpar
     novos = []
+    ja_triados = 0
     for email in fonte.ler():
-        if repositorio and repositorio.ja_triado(email.id):
-            log.info("%s já triado, pulando", email.id)
+        if destino and destino.ja_triado(email.id):
+            ja_triados += 1
             continue
         novos.append(limpar(email))
+    log.info("%d novos, %d já triados", len(novos), ja_triados)
 
-    # Fase 2: propaganda vai direto para o banco, sem gastar LLM
+    # Fase 2: propaganda vai direto para o destino, sem gastar LLM
     resultados = []
     para_classificar = []
     for limpo in novos:
         motivo = motivo_propaganda(limpo)
         if motivo:
-            resultados.append(_registrar(triagem_de_propaganda(limpo, motivo), repositorio))
+            resultados.append(_registrar(triagem_de_propaganda(limpo, motivo), destino))
         else:
             para_classificar.append(limpo)
 
@@ -53,13 +65,13 @@ def processar(
         triagem = aplicar_regras(
             limpo, classificacao, cadastro, classificador.llm.nome_modelo, PROMPT_VERSAO
         )
-        resultados.append(_registrar(triagem, repositorio))
+        resultados.append(_registrar(triagem, destino))
     return resultados
 
 
-def _registrar(triagem: Triagem, repositorio: Repositorio | None) -> Triagem:
-    if repositorio:
-        repositorio.salvar(triagem)
+def _registrar(triagem: Triagem, destino: Destino | None) -> Triagem:
+    if destino:
+        destino.salvar(triagem)
     # Log só com o id: assunto e remetente são dado pessoal e ficam no Gmail
     log.info(
         "%-12s %-10s revisão=%-5s categoria=%s",
@@ -78,12 +90,12 @@ def main() -> None:
 
     llm = ClienteOllama(config.ollama_url, config.ollama_modelo, config.llm_timeout_s)
     banco = nullcontext() if args.sem_banco else Repositorio(config.database_url)
-    with banco as repositorio:
+    with banco as destino:
         resultados = processar(
             fonte=FonteJson(args.caminho),
             classificador=Classificador(llm, config.llm_tentativas),
             cadastro=CadastroCondominios.de_csv(config.condominios_csv, config.gestores_csv),
-            repositorio=repositorio,
+            destino=destino,
         )
 
     if args.sem_banco:

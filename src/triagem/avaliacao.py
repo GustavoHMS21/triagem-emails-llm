@@ -4,9 +4,10 @@ Uso:
     uv run python -m triagem.avaliacao rodar        # chama o LLM; retoma de onde parou
     uv run python -m triagem.avaliacao relatorio    # só calcula as métricas
 
-`rodar` não grava no PostgreSQL: o banco é a fila real das atendentes. Cada
-resultado vai para um arquivo JSONL, uma linha por e-mail, gravada na hora;
-se a execução cair, a próxima pula o que já foi avaliado.
+`rodar` executa o mesmo `processar()` do pipeline (filtro, ordem, LLM, regras),
+trocando só o destino: em vez do PostgreSQL (a fila real das atendentes), um
+arquivo JSONL, uma linha por e-mail, gravada na hora. Se a execução cair, a
+próxima pula o que já está no arquivo.
 """
 
 import argparse
@@ -18,13 +19,14 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from triagem.classificador import PROMPT_VERSAO, Classificador
+from triagem.classificador import Classificador
 from triagem.config import config
 from triagem.entrada import FonteJson
-from triagem.filtro import motivo_propaganda, triagem_de_propaganda
-from triagem.limpeza import limpar
+from triagem.filtro import FILTRO_VERSAO
 from triagem.llm import ClienteOllama
-from triagem.regras import CadastroCondominios, aplicar_regras
+from triagem.modelos import Triagem
+from triagem.pipeline import processar
+from triagem.regras import CadastroCondominios
 
 log = logging.getLogger("triagem.avaliacao")
 
@@ -50,44 +52,68 @@ CASOS_ESPECIAIS = {
 # --- Execução ----------------------------------------------------------------
 
 
-def rodar(amostra: Path = AMOSTRA, saida: Path = RESULTADOS) -> None:
-    saida.parent.mkdir(parents=True, exist_ok=True)
-    feitos = {json.loads(linha)["id"] for linha in saida.read_text(encoding="utf-8").splitlines()} if saida.exists() else set()
+class ArquivoResultados:
+    """Destino do pipeline (mesma interface do Repositorio) que grava em JSONL.
 
-    llm = ClienteOllama(config.ollama_url, config.ollama_modelo, config.llm_timeout_s)
-    classificador = Classificador(llm, config.llm_tentativas)
+        with ArquivoResultados(caminho) as destino:
+            processar(fonte, classificador, cadastro, destino)
+    """
+
+    def __init__(self, caminho: Path):
+        self.caminho = caminho
+        self._feitos: set[str] = set()
+        self._arquivo = None
+        self._ultimo = 0.0
+
+    def __enter__(self) -> "ArquivoResultados":
+        self.caminho.parent.mkdir(parents=True, exist_ok=True)
+        if self.caminho.exists():
+            linhas = self.caminho.read_text(encoding="utf-8").splitlines()
+            self._feitos = {json.loads(l)["id"] for l in linhas if l.strip()}
+        self._arquivo = open(self.caminho, "a", encoding="utf-8")
+        self._ultimo = time.perf_counter()
+        return self
+
+    def __exit__(self, *_) -> None:
+        self._arquivo.close()
+
+    def ja_triado(self, email_id: str) -> bool:
+        return email_id in self._feitos
+
+    def salvar(self, t: Triagem) -> bool:
+        # O pipeline processa um e-mail por vez: o intervalo desde o último
+        # salvamento é, na prática, o tempo de classificação deste e-mail
+        agora = time.perf_counter()
+        segundos, self._ultimo = agora - self._ultimo, agora
+
+        propaganda = t.prompt_versao == FILTRO_VERSAO
+        c = t.classificacao
+        registro = {
+            "id": t.email.original.id,
+            "filtrado_como_propaganda": propaganda,
+            "llm_falhou": c is None and not propaganda,
+            "urgencia_llm": c.urgencia if c else None,
+            "categoria": t.categoria,
+            "nivel_final": t.nivel_final.name.lower(),
+            "requer_revisao": t.requer_revisao,
+            "motivos": t.motivos,
+            "segundos": round(segundos, 1),
+        }
+        self._arquivo.write(json.dumps(registro, ensure_ascii=False) + "\n")
+        self._arquivo.flush()  # gravado na hora: uma queda não perde o que já rodou
+        self._feitos.add(registro["id"])
+        return True
+
+
+def rodar(amostra: Path = AMOSTRA, saida: Path = RESULTADOS, classificador: Classificador | None = None) -> None:
+    """Roda o pipeline de produção sobre a amostra, gravando no arquivo de resultados."""
+    if classificador is None:
+        llm = ClienteOllama(config.ollama_url, config.ollama_modelo, config.llm_timeout_s)
+        classificador = Classificador(llm, config.llm_tentativas)
     cadastro = CadastroCondominios.de_csv(config.condominios_csv, config.gestores_csv)
 
-    pendentes = [e for e in FonteJson(amostra).ler() if e.id not in feitos]
-    log.info("%d já avaliados, %d pendentes", len(feitos), len(pendentes))
-
-    with open(saida, "a", encoding="utf-8") as arquivo:
-        for i, email in enumerate(pendentes, 1):
-            inicio = time.perf_counter()
-            limpo = limpar(email)
-            motivo = motivo_propaganda(limpo)
-            if motivo:
-                triagem = triagem_de_propaganda(limpo, motivo)
-            else:
-                classificacao = classificador.classificar(limpo)
-                triagem = aplicar_regras(limpo, classificacao, cadastro, llm.nome_modelo, PROMPT_VERSAO)
-
-            c = triagem.classificacao
-            registro = {
-                "id": email.id,
-                "filtrado_como_propaganda": motivo is not None,
-                "llm_falhou": c is None and motivo is None,
-                "urgencia_llm": c.urgencia if c else None,
-                "categoria": triagem.categoria,
-                "nivel_final": triagem.nivel_final.name.lower(),
-                "requer_revisao": triagem.requer_revisao,
-                "motivos": triagem.motivos,
-                "segundos": round(time.perf_counter() - inicio, 1),
-            }
-            arquivo.write(json.dumps(registro, ensure_ascii=False) + "\n")
-            arquivo.flush()  # gravado na hora: uma queda não perde o que já rodou
-            log.info("[%d/%d] %s -> %s%s (%.0fs)", i, len(pendentes), email.id, registro["nivel_final"],
-                     " +revisão" if triagem.requer_revisao else "", registro["segundos"])
+    with ArquivoResultados(saida) as destino:
+        processar(FonteJson(amostra), classificador, cadastro, destino)
 
 
 # --- Métricas ----------------------------------------------------------------

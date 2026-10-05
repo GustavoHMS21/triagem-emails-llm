@@ -1,4 +1,7 @@
-from triagem.avaliacao import calcular_metricas
+import json
+
+from triagem.avaliacao import calcular_metricas, rodar
+from triagem.classificador import Classificador
 
 
 def resultado(id, nivel_final, urgencia_llm, categoria="manutencao", revisao=False):
@@ -47,3 +50,58 @@ def test_ignora_emails_ainda_nao_avaliados():
     m = calcular_metricas([resultado("A", "urgente", "urgente")], gabarito(A="urgente", B="urgente"))
     assert m.total == 1
     assert m.recall_urgente_sistema == 1.0
+
+
+# --- rodar(): a avaliação passa pelo pipeline de produção ---------------------
+
+RESPOSTA = (
+    '{"categoria": "manutencao", "urgencia": "urgente", "em_duvida": false,'
+    ' "elevador_parado": false, "resumo": "r", "motivo": "m"}'
+)
+
+
+class LLMQueAnota:
+    nome_modelo = "falso"
+
+    def __init__(self):
+        self.recebidos: list[str] = []
+
+    def gerar_json(self, sistema, usuario, schema):
+        self.recebidos.append(usuario)
+        return RESPOSTA
+
+
+def _amostra(pasta):
+    emails = [
+        {"id": "boleto", "remetente": "a@b.com", "assunto": "boleto", "corpo": "segunda via do boleto",
+         "recebido_em": "2026-10-01T08:00:00-03:00"},
+        {"id": "loja", "remetente": "loja@x.com", "assunto": "Aproveite a promoção",
+         "corpo": "Para não receber mais nossos e-mails, clique aqui.", "recebido_em": "2026-10-01T09:00:00-03:00"},
+        {"id": "gas", "remetente": "c@d.com", "assunto": "cheiro estranho", "corpo": "cheiro de gás no hall",
+         "recebido_em": "2026-10-01T11:00:00-03:00"},
+    ]
+    caminho = pasta / "amostra.json"
+    caminho.write_text(json.dumps(emails), encoding="utf-8")
+    return caminho
+
+
+def test_rodar_usa_filtro_e_ordem_do_pipeline(tmp_path):
+    llm = LLMQueAnota()
+    saida = tmp_path / "resultados.jsonl"
+    rodar(_amostra(tmp_path), saida, Classificador(llm, 1))
+
+    registros = {r["id"]: r for r in map(json.loads, saida.read_text(encoding="utf-8").splitlines())}
+    assert set(registros) == {"boleto", "loja", "gas"}
+    assert registros["loja"]["filtrado_como_propaganda"]
+    assert len(llm.recebidos) == 2  # propaganda não chegou ao LLM
+    assert "cheiro de gás" in llm.recebidos[0]  # urgente primeiro, como na produção
+
+
+def test_rodar_retoma_sem_chamar_o_llm_de_novo(tmp_path):
+    amostra, saida = _amostra(tmp_path), tmp_path / "resultados.jsonl"
+    rodar(amostra, saida, Classificador(LLMQueAnota(), 1))
+
+    segunda = LLMQueAnota()
+    rodar(amostra, saida, Classificador(segunda, 1))
+    assert segunda.recebidos == []
+    assert len(saida.read_text(encoding="utf-8").splitlines()) == 3

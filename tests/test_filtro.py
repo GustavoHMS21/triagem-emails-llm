@@ -99,7 +99,7 @@ def test_pipeline_pula_propaganda_e_classifica_urgente_primeiro():
         email(id="gas", assunto="cheiro estranho", corpo="cheiro de gás no hall", hora=11),
     ])
 
-    resultados = processar(fonte, Classificador(llm, 1), CadastroCondominios([]), repositorio=None)
+    resultados = processar(fonte, Classificador(llm, 1), CadastroCondominios([]), destino=None)
 
     # propaganda não chegou ao LLM: só 2 chamadas, e a primeira foi a do gás
     assert len(llm.recebidos) == 2
