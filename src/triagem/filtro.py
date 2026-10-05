@@ -7,7 +7,7 @@ import unicodedata
 from datetime import datetime
 
 from triagem.modelos import EmailLimpo, Nivel, Triagem
-from triagem.regras import PALAVRAS_CRITICAS
+from triagem.palavras_chave import nivel_da_fila
 
 FILTRO_VERSAO = "filtro_v1"
 
@@ -74,42 +74,12 @@ def triagem_de_propaganda(email: EmailLimpo, motivo: str) -> Triagem:
 
 
 # --- Ordem da fila -----------------------------------------------------------
-# A fila usa TODAS as palavras críticas da rede de segurança (regras.py) e mais
-# algumas extras. Aqui errar é barato: no pior caso um e-mail comum é
-# classificado mais cedo. Por isso esta lista pode ser mais larga.
-
-PALAVRAS_SO_FILA: dict[str, Nivel] = {
-    # Água em movimento: "ta descendo agua", "a agua da escada entrou" (E019, E020)
-    (
-        r"[aá]gua.{0,30}(descend|cain|sain|entr|escorr)"
-        r"|(descend|cain|sain|entr|escorr)\w*\s+[aá]gua|molhando|molhou"
-    ): Nivel.URGENTE,
-    # Risco elétrico: "fio solto... pode dar choque?" (E073)
-    r"fio solto|choque": Nivel.URGENTE,
-    r"elevador": Nivel.IMPORTANTE,
-    r"goteira|pingando|pingo": Nivel.IMPORTANTE,
-    r"port[aã]o": Nivel.IMPORTANTE,
-    r"interfone": Nivel.IMPORTANTE,
-    r"mofo|umidade|mancha": Nivel.IMPORTANTE,
-    # Luz: "ta um breu", "muito escuro", "lampada da escada queimou" (E052, E063, E144)
-    r"apagad|breu|escuro|l[aâ]mpada": Nivel.IMPORTANTE,
-    # Falta de água chegando: "a bomba parou... acaba a agua" (E077)
-    r"bomba|acab\w* a [aá]gua": Nivel.IMPORTANTE,
-    # Risco físico: "buraco aberto... alguém pode cair", "se alguém se machucar" (E048, E081)
-    r"buraco|\bcair\b|machuc": Nivel.IMPORTANTE,
-}
-_PALAVRAS_FILA = [
-    (re.compile(padrao, re.IGNORECASE), nivel)
-    for padrao, nivel in {**{p: n for p, (n, _) in PALAVRAS_CRITICAS.items()}, **PALAVRAS_SO_FILA}.items()
-]
 
 
 def chave_da_fila(email: EmailLimpo) -> tuple[int, datetime]:
     """Ordem de classificação: menor chave passa antes pelo LLM.
 
     1º quem tem palavra de nível urgente, 2º importante, 3º o resto;
-    dentro de cada grupo, o mais antigo primeiro.
+    dentro de cada grupo, o mais antigo primeiro. As palavras estão em palavras_chave.py.
     """
-    texto = f"{email.assunto}\n{email.corpo}"
-    nivel = max((nivel for padrao, nivel in _PALAVRAS_FILA if padrao.search(texto)), default=0)
-    return (-nivel, email.original.recebido_em)
+    return (-nivel_da_fila(f"{email.assunto}\n{email.corpo}"), email.original.recebido_em)

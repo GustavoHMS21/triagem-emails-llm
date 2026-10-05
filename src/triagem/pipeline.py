@@ -11,6 +11,8 @@ from contextlib import nullcontext
 from pathlib import Path
 from typing import Protocol
 
+from triagem.cadastro import CadastroCondominios
+from triagem.cadastro_csv import carregar_cadastro
 from triagem.classificador import PROMPT_VERSAO, Classificador
 from triagem.config import config
 from triagem.entrada import FonteEmails, FonteJson
@@ -18,7 +20,7 @@ from triagem.filtro import chave_da_fila, motivo_propaganda, triagem_de_propagan
 from triagem.limpeza import limpar
 from triagem.llm import ClienteOllama
 from triagem.modelos import Triagem
-from triagem.regras import CadastroCondominios, aplicar_regras
+from triagem.regras import aplicar_regras
 from triagem.repositorio import Repositorio
 
 log = logging.getLogger("triagem")
@@ -95,7 +97,7 @@ def main() -> None:
         resultados = processar(
             fonte=FonteJson(args.caminho),
             classificador=Classificador(llm, config.llm_tentativas),
-            cadastro=CadastroCondominios.de_csv(config.condominios_csv, config.gestores_csv),
+            cadastro=carregar_cadastro(config.condominios_csv, config.gestores_csv),
             destino=destino,
         )
 

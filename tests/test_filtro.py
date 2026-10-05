@@ -1,11 +1,11 @@
 from datetime import datetime
 
+from triagem.cadastro import CadastroCondominios
 from triagem.classificador import Classificador
 from triagem.filtro import chave_da_fila, motivo_propaganda
 from triagem.limpeza import limpar
 from triagem.modelos import Email, Nivel
 from triagem.pipeline import processar
-from triagem.regras import CadastroCondominios
 
 DESCADASTRO = {"List-Unsubscribe": "<mailto:sair@loja.com>"}
 

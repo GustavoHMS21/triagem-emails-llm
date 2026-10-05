@@ -58,7 +58,10 @@ O CI (GitHub Actions) roda lint, formatação, tipos e testes a cada push.
 | `src/triagem/llm.py` | Interface do LLM e cliente Ollama |
 | `src/triagem/classificador.py` | Prompt, chamada, validação e novas tentativas |
 | `src/triagem/prompts/` | Prompts versionados |
-| `src/triagem/regras.py` | Regras de negócio e rede de segurança |
+| `src/triagem/regras.py` | Regras de negócio |
+| `src/triagem/palavras_chave.py` | Listas de palavras-chave (rede de segurança e ordem da fila) |
+| `src/triagem/cadastro.py` | Condomínios e gestores: estrutura e busca |
+| `src/triagem/cadastro_csv.py` | Carrega o cadastro a partir dos CSVs |
 | `src/triagem/repositorio.py` | Persistência no PostgreSQL |
 | `src/triagem/painel.py` | Painel da fila (Streamlit) |
 | `data/condominios.csv` | Condomínios e nº de elevadores (vazio = não informado) |

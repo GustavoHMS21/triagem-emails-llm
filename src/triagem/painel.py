@@ -15,9 +15,10 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import streamlit as st
 
+from triagem.cadastro import CadastroCondominios
+from triagem.cadastro_csv import carregar_cadastro
 from triagem.config import config
 from triagem.formatacao import ROTULOS_STATUS, escapar_markdown, link_gmail, rotulo_categoria, tempo_de_espera
-from triagem.regras import CadastroCondominios
 from triagem.repositorio import Repositorio
 
 FUSO = ZoneInfo("America/Sao_Paulo")  # o banco guarda em UTC; a atendente lê no horário local
@@ -196,7 +197,7 @@ st.markdown(_CSS, unsafe_allow_html=True)
 # O Streamlit roda este script de novo a cada clique: uma conexão por atualização da tela,
 # fechada pelo `with` mesmo quando st.rerun() interrompe a execução
 with Repositorio(config.database_url) as repo:
-    cadastro = CadastroCondominios.de_csv(config.condominios_csv, config.gestores_csv)
+    cadastro = carregar_cadastro(config.condominios_csv, config.gestores_csv)
     agora = datetime.now(FUSO)
     fila = filtros(repo.fila(COLUNAS), cadastro)
 

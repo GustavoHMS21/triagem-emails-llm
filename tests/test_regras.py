@@ -2,10 +2,12 @@ from datetime import datetime
 
 import pytest
 
+from triagem.cadastro import CadastroCondominios, Condominio, Gestor
+from triagem.cadastro_csv import carregar_cadastro
 from triagem.config import config
 from triagem.limpeza import limpar
 from triagem.modelos import Anexo, Classificacao, Email, Nivel
-from triagem.regras import CadastroCondominios, Condominio, Gestor, aplicar_regras
+from triagem.regras import aplicar_regras
 
 ACACIAS = Condominio("C01", "Condomínio Jardim das Acácias", 2)
 SOLAR = Condominio("C02", "Edifício Solar do Parque", 1)
@@ -164,7 +166,7 @@ def test_nome_de_condominio_generico_nao_casa_com_o_primeiro_da_lista():
 
 
 def test_cadastro_real_carrega_e_todo_gestor_aponta_para_condominio_existente():
-    cadastro = CadastroCondominios.de_csv(config.condominios_csv, config.gestores_csv)
+    cadastro = carregar_cadastro(config.condominios_csv, config.gestores_csv)
     emails = ("roberto@nogueiratransportes.com.br", "roberto.nogueira.sindico@gmail.com")
     roberto = [cadastro.por_gestor(e) for e in emails]
     assert all(g and g.condominio.id == "C01" for g in roberto)

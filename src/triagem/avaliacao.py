@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TextIO
 
+from triagem.cadastro_csv import carregar_cadastro
 from triagem.classificador import Classificador
 from triagem.config import config
 from triagem.entrada import FonteJson
@@ -27,7 +28,6 @@ from triagem.filtro import FILTRO_VERSAO
 from triagem.llm import ClienteOllama
 from triagem.modelos import Triagem
 from triagem.pipeline import processar
-from triagem.regras import CadastroCondominios
 
 log = logging.getLogger("triagem.avaliacao")
 
@@ -118,7 +118,7 @@ def rodar(amostra: Path = AMOSTRA, saida: Path = RESULTADOS, classificador: Clas
     if classificador is None:
         llm = ClienteOllama(config.ollama_url, config.ollama_modelo, config.llm_timeout_s)
         classificador = Classificador(llm, config.llm_tentativas)
-    cadastro = CadastroCondominios.de_csv(config.condominios_csv, config.gestores_csv)
+    cadastro = carregar_cadastro(config.condominios_csv, config.gestores_csv)
 
     with ArquivoResultados(saida) as destino:
         processar(FonteJson(amostra), classificador, cadastro, destino)
