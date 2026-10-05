@@ -4,6 +4,9 @@ Quadro por status (pendente, em atendimento, concluído), cada coluna em ordem
 de prioridade, e um resumo por condomínio. O conteúdo do e-mail não é guardado
 (fica no Gmail): cada chamado tem o link para abrir a mensagem original.
 
+Este arquivo só desenha: filtros, indicadores, colunas e resumo são calculados
+em fila.py, que é testável sem Streamlit.
+
 Uso:
     uv run streamlit run src/triagem/painel.py
 """
@@ -12,12 +15,24 @@ from datetime import datetime
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-import pandas as pd
 import streamlit as st
 
 from triagem.cadastro import CadastroCondominios
 from triagem.cadastro_csv import carregar_cadastro
 from triagem.config import config
+from triagem.fila import (
+    COLUNAS,
+    MAX_CONCLUIDOS,
+    PROXIMA_ACAO,
+    Chamado,
+    Filtros,
+    calcular_indicadores,
+    filtrar,
+    itens_da_coluna,
+    nome_condominio,
+    opcoes_de_condominio,
+    resumo_por_condominio,
+)
 from triagem.formatacao import ROTULOS_STATUS, escapar_markdown, link_gmail, rotulo_categoria, tempo_de_espera
 from triagem.repositorio import Repositorio
 
@@ -25,15 +40,6 @@ FUSO = ZoneInfo("America/Sao_Paulo")  # o banco guarda em UTC; a atendente lê n
 
 # nível -> (rótulo, cor do selo)
 NIVEIS = {3: ("Urgente", "red"), 2: ("Importante", "orange"), 1: ("Normal", "gray")}
-COLUNAS = ["pendente", "em_atendimento", "concluido"]
-# status -> (botão, próximo status): uma ação principal por cartão
-PROXIMA_ACAO = {
-    "pendente": ("Assumir", "em_atendimento"),
-    "em_atendimento": ("Concluir", "concluido"),
-    "concluido": ("Reabrir", "pendente"),
-}
-SEM_CONDOMINIO = "Não identificado"
-MAX_CONCLUIDOS = 10
 
 # CSS fixo: nenhum dado do banco entra aqui. Borda colorida por nível nos cartões
 # (o Streamlit expõe a key do container como classe "st-key-<key>").
@@ -46,41 +52,19 @@ _CSS = """
 """
 
 
-def nome_condominio(t: dict, cadastro: CadastroCondominios) -> str:
-    condominio = cadastro.por_id(t["condominio_id"])
-    return condominio.nome if condominio else SEM_CONDOMINIO
-
-
-# --- Filtros -----------------------------------------------------------------
-
-
-def filtros(fila: list[dict], cadastro: CadastroCondominios) -> list[dict]:
+def barra_de_filtros(fila: list[Chamado], cadastro: CadastroCondominios) -> Filtros:
     with st.sidebar:
         st.header("Filtros")
-        nomes = sorted({nome_condominio(t, cadastro) for t in fila} - {SEM_CONDOMINIO})
-        condominios = st.multiselect("Condomínio", nomes + [SEM_CONDOMINIO], placeholder="Todos os condomínios")
-        # Nada selecionado = todos (em vez de uma tela vazia sem explicação)
-        niveis = st.pills(
-            "Nível",
-            [3, 2, 1],
-            selection_mode="multi",
-            default=[3, 2, 1],
-            format_func=lambda n: NIVEIS[n][0],
-        ) or [3, 2, 1]
-        so_revisao = st.toggle("Só os que pedem revisão")
-        esconder_propaganda = st.toggle("Esconder propaganda", value=True)
-
-    return [
-        t
-        for t in fila
-        if (not condominios or nome_condominio(t, cadastro) in condominios)
-        and t["nivel_final"] in niveis
-        and (t["requer_revisao"] or not so_revisao)
-        and not (esconder_propaganda and t["categoria"] == "lixo")
-    ]
-
-
-# --- Cabeçalho e indicadores --------------------------------------------------
+        return Filtros(
+            condominios=st.multiselect(
+                "Condomínio", opcoes_de_condominio(fila, cadastro), placeholder="Todos os condomínios"
+            ),
+            niveis=st.pills(
+                "Nível", [3, 2, 1], selection_mode="multi", default=[3, 2, 1], format_func=lambda n: NIVEIS[n][0]
+            ),
+            so_revisao=st.toggle("Só os que pedem revisão"),
+            esconder_propaganda=st.toggle("Esconder propaganda", value=True),
+        )
 
 
 def cabecalho(agora: datetime) -> None:
@@ -93,26 +77,17 @@ def cabecalho(agora: datetime) -> None:
             st.rerun()
 
 
-def indicadores(fila: list[dict], agora: datetime) -> None:
-    abertos = [t for t in fila if t["status"] != "concluido"]
-    urgentes_pendentes = [t for t in abertos if t["nivel_final"] == 3 and t["status"] == "pendente"]
-    mais_antigo = min((t["recebido_em"] for t in urgentes_pendentes), default=None)
-
+def indicadores(fila: list[Chamado], agora: datetime) -> None:
+    i = calcular_indicadores(fila)
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("🔴 Urgentes abertos", sum(t["nivel_final"] == 3 for t in abertos), border=True)
-    c2.metric("🟠 Importantes abertos", sum(t["nivel_final"] == 2 for t in abertos), border=True)
-    c3.metric("👀 Pedem revisão", sum(t["requer_revisao"] for t in abertos), border=True)
-    c4.metric(
-        "⏱ Urgente mais antigo esperando",
-        tempo_de_espera(mais_antigo, agora) if mais_antigo else "nenhum",
-        border=True,
-    )
+    c1.metric("🔴 Urgentes abertos", i.urgentes_abertos, border=True)
+    c2.metric("🟠 Importantes abertos", i.importantes_abertos, border=True)
+    c3.metric("👀 Pedem revisão", i.em_revisao, border=True)
+    espera = tempo_de_espera(i.urgente_mais_antigo, agora) if i.urgente_mais_antigo else "nenhum"
+    c4.metric("⏱ Urgente mais antigo esperando", espera, border=True)
 
 
-# --- Quadro por status --------------------------------------------------------
-
-
-def cartao(t: dict, cadastro: CadastroCondominios, repo: Repositorio, agora: datetime) -> None:
+def cartao(t: Chamado, cadastro: CadastroCondominios, repo: Repositorio, agora: datetime) -> None:
     nivel, cor = NIVEIS[t["nivel_final"]]
     with st.container(border=True, key=f"cartao-{t['nivel_final']}-{t['id']}"):
         selos = [f":{cor}-badge[{nivel}]"]
@@ -144,12 +119,10 @@ def cartao(t: dict, cadastro: CadastroCondominios, repo: Repositorio, agora: dat
             st.rerun()
 
 
-def quadro(fila: list[dict], cadastro: CadastroCondominios, repo: Repositorio, agora: datetime) -> None:
+def quadro(fila: list[Chamado], cadastro: CadastroCondominios, repo: Repositorio, agora: datetime) -> None:
     colunas = st.columns(len(COLUNAS), gap="medium")
     for status, coluna in zip(COLUNAS, colunas, strict=True):
-        itens = [t for t in fila if t["status"] == status]
-        if status == "concluido":
-            itens = sorted(itens, key=lambda t: t["atualizado_em"], reverse=True)[:MAX_CONCLUIDOS]
+        itens = itens_da_coluna(fila, status)
         with coluna:
             st.subheader(f"{ROTULOS_STATUS[status]} · {len(itens)}")
             if status == "concluido" and itens:
@@ -160,33 +133,13 @@ def quadro(fila: list[dict], cadastro: CadastroCondominios, repo: Repositorio, a
                 cartao(t, cadastro, repo, agora)
 
 
-# --- Resumo por condomínio ----------------------------------------------------
-
-
-def resumo_por_condominio(fila: list[dict], cadastro: CadastroCondominios) -> None:
-    abertos = [t for t in fila if t["status"] != "concluido"]
-    if not abertos:
+def aba_por_condominio(fila: list[Chamado], cadastro: CadastroCondominios) -> None:
+    resumo = resumo_por_condominio(fila, cadastro)
+    if not resumo:
         st.info("Nenhum chamado aberto com os filtros atuais.")
         return
-
-    linhas: dict[str, dict[str, int]] = {}
-    for t in abertos:
-        linha = linhas.setdefault(
-            nome_condominio(t, cadastro),
-            {"Urgentes": 0, "Importantes": 0, "Normais": 0, "Em revisão": 0, "Total": 0},
-        )
-        linha[{3: "Urgentes", 2: "Importantes", 1: "Normais"}[t["nivel_final"]]] += 1
-        linha["Em revisão"] += t["requer_revisao"]
-        linha["Total"] += 1
-
-    tabela = (
-        pd.DataFrame.from_dict(linhas, orient="index")
-        .rename_axis("Condomínio")
-        .reset_index()
-        .sort_values(["Urgentes", "Importantes", "Total"], ascending=False)
-    )
     st.caption("Chamados abertos (pendentes e em atendimento) por condomínio, mais urgentes primeiro.")
-    st.dataframe(tabela, hide_index=True, width="stretch")
+    st.dataframe(resumo, hide_index=True, width="stretch")
 
 
 # --- Página -------------------------------------------------------------------
@@ -199,7 +152,8 @@ st.markdown(_CSS, unsafe_allow_html=True)
 with Repositorio(config.database_url) as repo:
     cadastro = carregar_cadastro(config.condominios_csv, config.gestores_csv)
     agora = datetime.now(FUSO)
-    fila = filtros(repo.fila(COLUNAS), cadastro)
+    todos = repo.fila(COLUNAS)
+    fila = filtrar(todos, barra_de_filtros(todos, cadastro), cadastro)
 
     cabecalho(agora)
     indicadores(fila, agora)
@@ -207,4 +161,4 @@ with Repositorio(config.database_url) as repo:
     with aba_quadro:
         quadro(fila, cadastro, repo, agora)
     with aba_condominios:
-        resumo_por_condominio(fila, cadastro)
+        aba_por_condominio(fila, cadastro)

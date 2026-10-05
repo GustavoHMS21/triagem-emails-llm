@@ -63,7 +63,8 @@ O CI (GitHub Actions) roda lint, formatação, tipos e testes a cada push.
 | `src/triagem/cadastro.py` | Condomínios e gestores: estrutura e busca |
 | `src/triagem/cadastro_csv.py` | Carrega o cadastro a partir dos CSVs |
 | `src/triagem/repositorio.py` | Persistência no PostgreSQL |
-| `src/triagem/painel.py` | Painel da fila (Streamlit) |
+| `src/triagem/fila.py` | Lógica da fila: filtros, indicadores, colunas e resumo por condomínio |
+| `src/triagem/painel.py` | Painel da fila (Streamlit): só a interface |
 | `data/condominios.csv` | Condomínios e nº de elevadores (vazio = não informado) |
 | `data/gestores.csv` | Síndicos e subsíndicos: um e-mail por linha |
 | `data/amostras/` | Amostra de e-mails e gabarito para avaliação |
