@@ -35,7 +35,7 @@ def triagem(
         classificacao=None,
         categoria="manutencao",
         condominio_id="C01",
-        remetente_sindico=False,
+        remetente_gestor=False,
         nivel_final=nivel,
         requer_revisao=revisao,
         motivos=["Classificação em dúvida entre dois níveis"] if revisao else [],

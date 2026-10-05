@@ -94,7 +94,7 @@ def cartao(t: Chamado, cadastro: CadastroCondominios, repo: Repositorio, agora: 
         selos = [f":{cor}-badge[{nivel}]"]
         if t["requer_revisao"]:
             selos.append(":violet-badge[:material/visibility: Revisão]")
-        if t["remetente_sindico"]:
+        if t["remetente_gestor"]:
             selos.append(":blue-badge[:material/apartment: Síndico]")
         st.markdown(" ".join(selos))
 

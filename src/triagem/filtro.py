@@ -64,7 +64,7 @@ def triagem_de_propaganda(email: EmailLimpo, motivo: str) -> Triagem:
         classificacao=None,
         categoria="lixo",
         condominio_id=None,
-        remetente_sindico=False,
+        remetente_gestor=False,
         nivel_final=Nivel.NORMAL,
         requer_revisao=False,
         motivos=[motivo],

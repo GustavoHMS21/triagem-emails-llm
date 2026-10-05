@@ -102,7 +102,7 @@ def aplicar_regras(
         classificacao=classificacao,
         categoria=classificacao.categoria if classificacao else None,
         condominio_id=condominio.id if condominio else None,
-        remetente_sindico=gestor is not None,  # síndico ou subsíndico
+        remetente_gestor=gestor is not None,
         nivel_final=nivel,
         requer_revisao=revisao,
         motivos=motivos,

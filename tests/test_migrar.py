@@ -40,6 +40,7 @@ def test_banco_novo_recebe_todas_as_migracoes_em_ordem(banco_vazio):
     # Estado final do schema: colunas de dado pessoal removidas pela 002, tem_anexo criada
     assert "corpo" not in colunas and "remetente" not in colunas
     assert "tem_anexo" in colunas
+    assert "remetente_gestor" in colunas and "remetente_sindico" not in colunas  # 004
 
 
 def test_rodar_de_novo_nao_aplica_nada(banco_vazio):

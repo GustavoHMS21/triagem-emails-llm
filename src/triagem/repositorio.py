@@ -14,12 +14,12 @@ _INSERIR = """
 INSERT INTO triagens (
     email_id, recebido_em, tem_anexo,
     categoria, outras_categorias, urgencia_llm,
-    condominio_id, remetente_sindico, nivel_final, requer_revisao, motivos,
+    condominio_id, remetente_gestor, nivel_final, requer_revisao, motivos,
     modelo, prompt_versao
 ) VALUES (
     %(email_id)s, %(recebido_em)s, %(tem_anexo)s,
     %(categoria)s, %(outras_categorias)s, %(urgencia_llm)s,
-    %(condominio_id)s, %(remetente_sindico)s, %(nivel_final)s, %(requer_revisao)s, %(motivos)s,
+    %(condominio_id)s, %(remetente_gestor)s, %(nivel_final)s, %(requer_revisao)s, %(motivos)s,
     %(modelo)s, %(prompt_versao)s
 )
 ON CONFLICT (email_id) DO NOTHING
@@ -76,7 +76,7 @@ class Repositorio:
             "outras_categorias": c.outras_categorias if c else [],
             "urgencia_llm": c.urgencia if c else None,
             "condominio_id": t.condominio_id,
-            "remetente_sindico": t.remetente_sindico,
+            "remetente_gestor": t.remetente_gestor,
             "nivel_final": int(t.nivel_final),
             "requer_revisao": t.requer_revisao,
             "motivos": t.motivos,

@@ -107,7 +107,7 @@ class Triagem(BaseModel):
     classificacao: Classificacao | None  # None quando o LLM falhou ou nem foi chamado
     categoria: Categoria | None  # vem do LLM, ou do filtro quando é propaganda
     condominio_id: str | None
-    remetente_sindico: bool
+    remetente_gestor: bool
     nivel_final: Nivel
     requer_revisao: bool
     motivos: list[str]  # trilha de auditoria: por que o nível final é esse

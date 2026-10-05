@@ -98,7 +98,7 @@ def test_regra_do_elevador(condominio, esperado, revisao):
 
 def test_sindico_sobe_um_nivel():
     t = triar(email(remetente="SINDICO@solar.com.br"), classif(urgencia="normal"))
-    assert t.remetente_sindico
+    assert t.remetente_gestor
     assert t.condominio_id == "C02"
     assert t.nivel_final == Nivel.IMPORTANTE
 
@@ -110,7 +110,7 @@ def test_sindico_nao_passa_de_urgente():
 
 def test_assinatura_de_sindico_no_texto_nao_conta():
     t = triar(email("pedido simples\nSíndico do Solar do Parque"), classif(urgencia="normal"))
-    assert not t.remetente_sindico
+    assert not t.remetente_gestor
     assert t.nivel_final == Nivel.NORMAL
 
 
@@ -149,7 +149,7 @@ def test_sindico_com_segundo_email_tambem_sobe():
 def test_subsindico_sobe_um_nivel_e_o_motivo_diz_o_papel():
     t = triar(email(remetente="renata@gmail.com"), classif(urgencia="importante"))
     assert t.nivel_final == Nivel.URGENTE
-    assert t.remetente_sindico
+    assert t.remetente_gestor
     assert any("subsíndico de Condomínio Jardim das Acácias" in m for m in t.motivos)
 
 
