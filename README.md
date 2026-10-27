@@ -4,6 +4,8 @@
 
 Classifica os e-mails da caixa de atendimento por setor e urgência e monta uma fila ordenada por prioridade, para que vazamento, gás e elevador parado não esperem atrás de pedidos de segunda via.
 
+Construído em 3 dias, de 3 a 5 de outubro de 2026 (histórico de commits).
+
 Os dados em `data/` são fictícios.
 
 ## Como funciona
